@@ -25,3 +25,4 @@ def create_user(email, password, role):
 # ---- TEST USERS ----
 create_user("student1@college.edu", "student123", "student")
 create_user("retailer1@shop.com", "retailer123", "retailer")
+create_user("student1@col.com", "student1234", "student1")
