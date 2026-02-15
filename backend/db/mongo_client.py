@@ -19,3 +19,4 @@ students_col = db["students"]
 retailers_col = db["retailers"]
 jobs_col = db["jobs"]
 logs_col = db["interaction_logs"]
+logs_col.create_index("job_id")

@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from app.schemas import StudentProfile, InteractionLog
 from app.recommender import recommend_jobs
 from db.mongo_client import logs_col
+from app.recommender import job_popularity
+
 
 router = APIRouter()
 
@@ -22,4 +24,7 @@ def log_interaction_api(log: InteractionLog):
         "event_type": log.event_type,
         "timestamp": datetime.now(timezone.utc)
     })
+    # 🔥 Update in-memory popularity cache
+    job_popularity[log.job_id] = job_popularity.get(log.job_id, 0) + 1
+
     return {"status": "logged"}
