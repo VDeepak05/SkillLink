@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from datetime import datetime, timezone
 
-from app.schemas import StudentProfile, InteractionLog
+from app.schemas import StudentProfile, InteractionLog, JobResponse
 from app.recommender import recommend_jobs
 from db.mongo_client import logs_col
 from app.recommender import job_popularity
@@ -10,7 +10,7 @@ from app.recommender import job_popularity
 router = APIRouter()
 
 
-@router.post("/recommend")
+@router.post("/recommend", response_model=list[JobResponse])
 def get_recommendations(profile: StudentProfile):
     results = recommend_jobs(profile.dict())
     return results
