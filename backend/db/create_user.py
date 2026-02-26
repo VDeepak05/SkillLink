@@ -1,6 +1,6 @@
 import bcrypt
 from datetime import datetime
-from mongo_client import users_col
+from backend.db.mongo_client import users_col
 
 def create_user(email, password, role):
     # Check if user already exists

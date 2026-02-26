@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timezone, timedelta
-from mongo_client import jobs_col
+from backend.db.mongo_client import jobs_col
 import pandas as pd
 from pymongo import MongoClient
 from urllib.parse import quote_plus

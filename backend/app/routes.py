@@ -1,10 +1,9 @@
 from fastapi import APIRouter
 from datetime import datetime, timezone
 
-from app.schemas import StudentProfile, InteractionLog, JobResponse
-from app.recommender import recommend_jobs
-from db.mongo_client import logs_col
-from app.recommender import job_popularity
+from backend.app.schemas import StudentProfile, InteractionLog, JobResponse
+from backend.app.recommender import recommend_jobs, job_popularity
+from backend.db.mongo_client import logs_col
 
 
 router = APIRouter()

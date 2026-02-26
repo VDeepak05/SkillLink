@@ -2,7 +2,7 @@ import os
 from pymongo import MongoClient
 from urllib.parse import quote_plus
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"))
 
 
 # Load from environment variables

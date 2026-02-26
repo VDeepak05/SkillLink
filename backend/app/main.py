@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from app.routes import router
+from backend.app.routes import router
 import time
 
 app = FastAPI(

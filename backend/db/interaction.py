@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from mongo_client import logs_col
+from backend.db.mongo_client import logs_col
 
 def log_interaction(student_id, job_id, event_type):
     interaction = {
