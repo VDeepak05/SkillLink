@@ -27,7 +27,7 @@ jobs_col.create_index("job_id")
 
 # ---------- Load CSV ----------
 
-CSV_PATH = "../data/final_safe_jobs_dataset.csv"
+CSV_PATH = "backend/data/final_safe_jobs_dataset.csv"
 print("CSV exists:", os.path.exists(CSV_PATH))
 print("CSV absolute path:", os.path.abspath(CSV_PATH))
 df = pd.read_csv(CSV_PATH)

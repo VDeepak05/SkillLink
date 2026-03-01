@@ -11,7 +11,7 @@ import threading
 import time as time_module
 
 # =========================================================
-# LOAD ARTIFACTS (ONCE AT STARTUP)
+# LOAD ARTIFACTS
 # =========================================================
 
 with open("backend/data/tfidf_vectorizer.pkl", "rb") as f:
@@ -26,7 +26,7 @@ print("Job vectors shape:", job_vectors.shape)
 print("Metadata length:", len(jobs))
 
 # =========================================================
-# PRECOMPUTED LOOKUPS
+# LOOKUPS
 # =========================================================
 
 shift_index_map = {}
@@ -35,6 +35,9 @@ for idx, job in enumerate(jobs):
     shift_index_map.setdefault(shift, []).append(idx)
 
 job_lookup = {job["job_id"]: job for job in jobs}
+job_ids = [job["job_id"] for job in jobs]
+job_index = {jid: i for i, jid in enumerate(job_ids)}
+
 
 # =========================================================
 # POPULARITY CACHE
@@ -45,6 +48,9 @@ for log in logs_col.find({}, {"job_id": 1, "_id": 0}):
     jid = log.get("job_id")
     if jid:
         job_popularity[jid] = job_popularity.get(jid, 0) + 1
+
+max_popularity = max(job_popularity.values()) if job_popularity else 1
+
 
 # =========================================================
 # CREATED_AT CACHE
@@ -62,6 +68,7 @@ interaction_matrix = None
 item_similarity_matrix = None
 student_index = {}
 job_index = {}
+cf_lock = threading.Lock()
 
 def rebuild_collaborative_matrix():
     global interaction_matrix, item_similarity_matrix
@@ -69,77 +76,93 @@ def rebuild_collaborative_matrix():
 
     print("Building collaborative matrix...")
 
-    student_ids = list({log["student_id"] for log in logs_col.find({}, {"student_id": 1})})
+    student_ids = logs_col.distinct("student_id")
     job_ids = [job["job_id"] for job in jobs]
 
-    student_index = {sid: i for i, sid in enumerate(student_ids)}
-    job_index = {jid: i for i, jid in enumerate(job_ids)}
+    new_student_index = {sid: i for i, sid in enumerate(student_ids)}
+    new_job_index = {jid: i for i, jid in enumerate(job_ids)}
 
     rows, cols, data = [], [], []
 
     for log in logs_col.find({}, {"student_id": 1, "job_id": 1, "event_type": 1}):
-
         sid = log["student_id"]
         jid = log["job_id"]
 
-        if sid not in student_index or jid not in job_index:
+        if sid not in new_student_index or jid not in new_job_index:
             continue
 
         weight = 5 if log["event_type"] == "apply" else \
                  3 if log["event_type"] == "save" else 1
 
-        rows.append(student_index[sid])
-        cols.append(job_index[jid])
+        rows.append(new_student_index[sid])
+        cols.append(new_job_index[jid])
         data.append(weight)
 
-    if rows:
-        interaction_matrix = csr_matrix(
-            (data, (rows, cols)),
-            shape=(len(student_ids), len(job_ids))
-        )
+    if not rows:
+        with cf_lock:
+            interaction_matrix = None
+            item_similarity_matrix = None
+            student_index = new_student_index
+            job_index = new_job_index
+        print("No interactions found. CF disabled.")
+        return
 
-        item_similarity_matrix = cosine_similarity(
-            interaction_matrix.T,
-            dense_output=False
-        )
-    else:
-        interaction_matrix = None
-        item_similarity_matrix = None
+    new_interaction_matrix = csr_matrix(
+        (data, (rows, cols)),
+        shape=(len(student_ids), len(job_ids))
+    )
+
+    new_item_similarity_matrix = cosine_similarity(
+        new_interaction_matrix.T,
+        dense_output=False
+    )
+
+    with cf_lock:
+        interaction_matrix = new_interaction_matrix
+        item_similarity_matrix = new_item_similarity_matrix
+        student_index = new_student_index
+        job_index = new_job_index
 
     print("Collaborative matrix built.")
-    if interaction_matrix is not None:
-        print("Interaction matrix shape:", interaction_matrix.shape)
-        print("Item similarity shape:", item_similarity_matrix.shape)
-    else:
-        print("No interactions found. Collaborative filtering disabled.")
+
 rebuild_collaborative_matrix()
 
-# =========================================================
-# AUTO REFRESH CF (BACKGROUND THREAD)
-# =========================================================
-
-CF_REFRESH_INTERVAL = 300  # 5 minutes
+# Auto refresh (PRODUCTION ONLY)
+CF_REFRESH_INTERVAL = 300
 
 def cf_background_worker():
     while True:
         time_module.sleep(CF_REFRESH_INTERVAL)
         rebuild_collaborative_matrix()
 
-cf_thread = threading.Thread(target=cf_background_worker, daemon=True)
-cf_thread.start()
+threading.Thread(target=cf_background_worker, daemon=True).start()
 
 # =========================================================
 # RECOMMENDER
 # =========================================================
 
-def recommend_jobs(profile, evaluation_mode=False):
+def recommend_jobs(profile, evaluation_mode=False, weights=None, train_logs=None):
 
     start = time.perf_counter()
     student_id = profile["student_id"]
 
-    # -------------------------
-    # GEO FILTER
-    # -------------------------
+    # -----------------------------------------------------
+    # SHIFT FILTER (kept even in evaluation to maintain features)
+    # -----------------------------------------------------
+
+    preferred_shift = profile.get("preferred_shift", "").lower()
+    
+    candidate_indices = shift_index_map.get(
+        preferred_shift,
+        list(range(len(jobs)))
+    )
+
+    if not candidate_indices:
+        return []
+
+    # -----------------------------------------------------
+    # GEO FILTER (disabled in evaluation)
+    # -----------------------------------------------------
 
     geo_filtered = None
     distance_map = {}
@@ -151,7 +174,6 @@ def recommend_jobs(profile, evaluation_mode=False):
         max_distance = profile.get("max_distance_km")
 
         if lat and lon and max_distance:
-
             pipeline = [
                 {
                     "$geoNear": {
@@ -175,27 +197,13 @@ def recommend_jobs(profile, evaluation_mode=False):
             for doc in results:
                 distance_map[doc["job_id"]] = doc["distance"] / 1000
 
-    # -------------------------
-    # CONTENT VECTOR
-    # -------------------------
+    # -----------------------------------------------------
+    # CONTENT
+    # -----------------------------------------------------
 
     profile_text = f"{profile.get('skills','')} {profile.get('preferred_shift','')}"
     student_vector = tfidf.transform([profile_text])
 
-    # -------------------------
-    # SHIFT FILTER (DISABLED IN EVAL)
-    # -------------------------
-
-    if evaluation_mode:
-        candidate_indices = list(range(len(jobs)))
-    else:
-        preferred_shift = profile.get("preferred_shift","").lower()
-        candidate_indices = shift_index_map.get(
-            preferred_shift,
-            list(range(len(jobs)))
-        )
-
-    # GEO FILTER APPLICATION
     if geo_filtered is not None:
         candidate_indices = [
             idx for idx in candidate_indices
@@ -205,137 +213,141 @@ def recommend_jobs(profile, evaluation_mode=False):
             return []
 
     filtered_vectors = job_vectors[candidate_indices]
-
     similarities = cosine_similarity(student_vector, filtered_vectors)[0]
-
-    # Normalize content
     norm_content = similarities / similarities.max() if similarities.max() > 0 else similarities
 
-    # -------------------------
+    # -----------------------------------------------------
     # COLLABORATIVE
-    # -------------------------
+    # -----------------------------------------------------
 
     collab_scores = np.zeros(len(candidate_indices))
 
-    if interaction_matrix is not None and student_id in student_index:
+    with cf_lock:
+        current_interaction_matrix = interaction_matrix
+        current_item_sim = item_similarity_matrix
+        current_student_index = student_index
+        current_job_index = job_index
 
-        s_idx = student_index[student_id]
-        student_cf_vector = interaction_matrix[s_idx]
+    if current_interaction_matrix is not None and student_id in current_student_index:
+        s_idx = current_student_index[student_id]
+        cf_raw = current_interaction_matrix[s_idx] @ current_item_sim
 
-        # Multiply (1 x N) with (N x N)
-        cf_raw = student_cf_vector @ item_similarity_matrix
-
-        # Convert sparse safely
         if hasattr(cf_raw, "toarray"):
             cf_raw = cf_raw.toarray().flatten()
         else:
             cf_raw = np.array(cf_raw).flatten()
 
-        # Extract only candidate job scores
         for i, idx in enumerate(candidate_indices):
             jid = jobs[idx]["job_id"]
-            if jid in job_index:
-                collab_scores[i] = cf_raw[job_index[jid]]
+            if jid in current_job_index:
+                collab_scores[i] = cf_raw[current_job_index[jid]]
 
+        if collab_scores.max() > 0:
+            collab_scores /= collab_scores.max()
         norm_collab = collab_scores / collab_scores.max() if collab_scores.max() > 0 else collab_scores
 
-    # -------------------------
-    # PERSONAL SIGNAL
-    # -------------------------
 
-    category_preference = {}
+    # ----------------------------
+    # USER LOGS (shared for category + seen)
+    # ----------------------------
 
-    if not evaluation_mode:
-        user_logs = logs_col.find(
+    if train_logs is not None:
+        user_logs = train_logs
+    else:
+        user_logs = list(logs_col.find(
             {"student_id": student_id},
             {"job_id": 1, "event_type": 1, "_id": 0}
-        )
+        ))
 
-        for log in user_logs:
-            job = job_lookup.get(log["job_id"])
-            if not job:
-                continue
+    # -----------------------------------------------------
+    # PERSONALIZATION (disabled in evaluation)
+    # -----------------------------------------------------
 
-            category = job.get("shop_type")
-            weight = 5 if log["event_type"] == "apply" else \
-                     3 if log["event_type"] == "save" else 1
+    category_preference = {}
+    seen_jobs = set(log["job_id"] for log in user_logs)
 
-            category_preference[category] = category_preference.get(category, 0) + weight
+    for log in user_logs:
+        job = job_lookup.get(log["job_id"])
+        if not job:
+            continue
+
+        cat = job.get("shop_type")
+        if not cat:
+            continue
+
+        weight = 5 if log["event_type"] == "apply" else 3 if log["event_type"] == "save" else 1
+        category_preference[cat] = category_preference.get(cat, 0) + weight
 
     max_personal = max(category_preference.values()) if category_preference else 1
-    max_popularity = max(job_popularity.values()) if job_popularity else 1
 
-    # -------------------------
-    # ADAPTIVE WEIGHTING
-    # -------------------------
 
-    user_interactions = logs_col.count_documents({"student_id": student_id})
+    # -----------------------------------------------------
+    # WEIGHTS
+    # -----------------------------------------------------
 
-    if user_interactions < 5:
-        alpha, beta = 0.60, 0.10
+    if weights:
+        alpha, beta, gamma, delta, epsilon, zeta = weights
     else:
-        alpha, beta = 0.35, 0.30
+        # Default weights from grid search optimization
+        # (content, CF, pop, category, recency, distance)
+        alpha = 0.30
+        beta = 0.30
+        gamma = 0.08
+        delta = 0.07
+        epsilon = 0.07
+        zeta = 0.05
 
-    gamma = 0.10   # popularity
-    delta = 0.10   # personal
-    epsilon = 0.10 # recency
-    zeta = 0.05    # distance
-
-    # -------------------------
+    # -----------------------------------------------------
     # RANKING
-    # -------------------------
-
-    top_indices = norm_content.argsort()[-30:][::-1]
+    # -----------------------------------------------------
 
     recommendations = []
+    category_counts={}
+    top_local_indices = norm_content.argsort()[-20:][::-1]
 
-    for local_idx in top_indices:
+    for local_idx in top_local_indices:
 
         global_idx = candidate_indices[local_idx]
         job = jobs[global_idx]
         job_id = job["job_id"]
 
-        base_score = norm_content[local_idx]
-        collab_score = norm_collab[local_idx]
+        base = norm_content[local_idx]
+        cf_score = collab_scores[local_idx]
 
-        popularity = job_popularity.get(job_id, 0)
-        norm_pop = popularity / max_popularity if max_popularity > 0 else 0
-
-        personal = category_preference.get(job.get("shop_type"), 0)
-        norm_personal = personal / max_personal if max_personal > 0 else 0
+        pop = job_popularity.get(job_id, 0) / max_popularity
+        cat = job.get("shop_type")
+        personal = category_preference.get(job.get("shop_type"), 0) / max_personal
 
         created_dt = job_created_at.get(job_id)
         if created_dt:
+            if created_dt.tzinfo is None:
+                created_dt = created_dt.replace(tzinfo=timezone.utc)
             now = datetime.now(timezone.utc)
             days_old = (now - created_dt).days
-            recency_score = 1 / (1 + max(days_old, 0))
-        else:
-            recency_score = 0
+            recency = 1 / (1 + max(days_old, 0))
 
-        distance_score = 0
-        if geo_filtered is not None:
+        else:
+            recency = 0
+
+        distance = 0
+        if geo_filtered:
             d = distance_map.get(job_id)
             if d:
-                distance_score = 1 / (1 + d)
+                distance = 1 / (1 + d)
 
-        final_score = (
-            alpha * base_score
-            + beta * collab_score
-            + gamma * norm_pop
-            + delta * norm_personal
-            + epsilon * recency_score
-            + zeta * distance_score
+        score = (
+            alpha * base +
+            beta * cf_score +
+            gamma * pop +
+            delta * personal +
+            epsilon * recency +
+            zeta * distance 
         )
 
-        full_address = ", ".join(
-            filter(None, [
-                job.get("address_line"),
-                job.get("area"),
-                job.get("city"),
-                job.get("state"),
-                job.get("pincode")
-            ])
-        )
+        # Seen job penalty (soft)
+        if job_id in seen_jobs:
+            score *= 0.2
+
 
         recommendations.append({
             "job_id": job_id,
@@ -343,14 +355,41 @@ def recommend_jobs(profile, evaluation_mode=False):
             "shop_type": job.get("shop_type"),
             "shift_type": job.get("shift_type"),
             "salary_per_day": job.get("salary_per_day"),
-            "shop_name": job.get("shop_name"),
-            "full_address": full_address if full_address else None,
-            "score": float(final_score)
+            "score": float(score)
         })
 
-    recommendations = sorted(recommendations, key=lambda x: x["score"], reverse=True)[:10]
+        if len(recommendations) >= 100:
+            break
 
-    duration = time.perf_counter() - start
+    # -------------------------------------------
+    # GREEDY DIVERSITY RE-RANKING
+    # -------------------------------------------
+
+    recommendations = sorted(
+        recommendations,
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
+    final_recs = []
+    category_counts = {}
+
+    for rec in recommendations:
+
+        cat = rec["shop_type"]
+        count = category_counts.get(cat, 0)
+
+        # Allow max 3 per category
+        if count < 3:
+            final_recs.append(rec)
+            category_counts[cat] = count + 1
+
+        if len(final_recs) == 10:
+            break
+
+    recommendations = final_recs
+
     if not evaluation_mode:
-        print(f"Inference time: {duration*1000:.2f} ms")
+        print(f"Inference time: {(time.perf_counter()-start)*1000:.2f} ms")
+
     return recommendations

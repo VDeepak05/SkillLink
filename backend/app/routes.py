@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from datetime import datetime, timezone
 
 from backend.app.schemas import StudentProfile, InteractionLog, JobResponse
-from backend.app.recommender import recommend_jobs, job_popularity
+from backend.app.recommender1 import recommend_jobs, job_popularity
 from backend.db.mongo_client import logs_col
 
 

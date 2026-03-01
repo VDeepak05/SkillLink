@@ -2,18 +2,17 @@ import random
 from backend.db.mongo_client import logs_col, jobs_col
 
 NUM_STUDENTS = 300
-INTERACTIONS_PER_STUDENT = 15
+INTERACTIONS_PER_STUDENT = 40
 
 print("Clearing old synthetic logs...")
 logs_col.delete_many({})
 
-# Fetch all jobs
 jobs = list(jobs_col.find({}, {"job_id": 1, "shop_type": 1, "shift_type": 1}))
 
 if not jobs:
     raise Exception("No jobs found in DB.")
 
-# Group jobs by shop_type
+# Group jobs by category
 jobs_by_category = {}
 for job in jobs:
     cat = job.get("shop_type", "unknown")
@@ -22,40 +21,38 @@ for job in jobs:
 all_categories = list(jobs_by_category.keys())
 all_jobs = jobs
 
-print("Generating structured synthetic logs...")
+print("Generating strong-structure synthetic logs...")
 
 for i in range(NUM_STUDENTS):
 
     student_id = f"student_{i}"
 
-    # 🎯 Each student prefers 1–2 categories
-    preferred_categories = random.sample(all_categories, k=min(2, len(all_categories)))
+    # 🔥 One dominant category
+    primary_category = random.choice(all_categories)
 
-    # 🎯 Preferred shift
+    # 🔥 Strong shift preference
     preferred_shift = random.choice(["morning", "evening", "night"])
 
     for _ in range(INTERACTIONS_PER_STUDENT):
 
-        # 80% probability: interact within preferred categories
-        if random.random() < 0.8:
-            category = random.choice(preferred_categories)
-            candidate_jobs = jobs_by_category.get(category, all_jobs)
+        # 90% within primary category
+        if random.random() < 0.9:
+            candidate_jobs = jobs_by_category.get(primary_category, all_jobs)
         else:
-            # 20% exploration
-            candidate_jobs = all_jobs
+            candidate_jobs = all_jobs  # exploration
 
         job = random.choice(candidate_jobs)
 
-        # Bias shift match slightly
+        # Strong shift bias
         if job.get("shift_type") == preferred_shift:
             event_type = random.choices(
                 ["view", "save", "apply"],
-                weights=[1, 2, 4]
+                weights=[1, 2, 6]  # strong apply bias
             )[0]
         else:
             event_type = random.choices(
                 ["view", "save", "apply"],
-                weights=[3, 2, 1]
+                weights=[4, 2, 1]
             )[0]
 
         logs_col.insert_one({
