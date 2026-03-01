@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+    --font-sans: "Plus Jakarta Sans", "Inter", sans-serif;
+
+    /* Deep Forest Green Palette (User Provided) */
+    --color-olive-50: #eff6f3;
+    --color-olive-100: #dcece5;
+    --color-olive-200: #b9d9c9;
+    --color-olive-300: #8bbfa3;
+    --color-olive-400: #5fa07e;
+    --color-olive-500: #3f8260;
+    --color-olive-600: #30674d;
+    --color-olive-700: #2a5241;
+    --color-olive-800: #244237;
+    --color-olive-900: #1f372f;
+    --color-olive-950: #101f1b;
+
+    --color-primary: var(--color-olive-600);
+    /* Using 600 as primary for that deep look */
+    --color-primary-dark: var(--color-olive-800);
+    --color-secondary: #0f1a17;
+    /* Matching 950 */
+}
+
+body {
+    font-family: var(--font-sans);
+    background-color: #F3F4F6;
+}
+
+@keyframes gradientShiftDark {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.dark-animated-gradient {
+    background: linear-gradient(-45deg,
+            #0f172a,
+            #064e3b,
+            #052e16,
+            #0c4a6e);
+    background-size: 400% 400%;
+    animation: gradientShiftDark 18s ease infinite;
+}
+
+/* 🌌 Premium Dark Animated Gradient */
