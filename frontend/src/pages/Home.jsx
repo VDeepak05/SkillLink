@@ -53,9 +53,16 @@ const Home = () => {
                 .includes(searchTerm.toLowerCase());
 
             const matchesDistance = parseFloat(job.distance) <= maxDistance;
-            const matchesShift = selectedShifts.length === 0 || selectedShifts.includes(job.shift);
+
+            // Shift is typically lowercase in DB, uppercase in UI array
+            const matchesShift = selectedShifts.length === 0 ||
+                selectedShifts.some(s => s.toLowerCase() === (job.shift || '').toLowerCase());
+
             const matchesType = shopType === 'All Types' || job.shopType === shopType;
-            const matchesSalary = job.salary >= minSalary;
+
+            // Ensure salaries are compared as numbers
+            const jobSalary = parseFloat(job.salary) || 0;
+            const matchesSalary = jobSalary >= minSalary;
 
             return matchesSearch && matchesDistance && matchesShift && matchesType && matchesSalary;
         });

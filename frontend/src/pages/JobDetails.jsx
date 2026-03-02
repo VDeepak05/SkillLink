@@ -115,7 +115,7 @@ const JobDetails = () => {
                             </button>
 
                             <div className="flex flex-col items-center text-center">
-                                <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-6">
+                                <div className="w-16 h-16 bg-olive-50 text-olive-600 rounded-full flex items-center justify-center mb-6">
                                     <AlertCircle size={32} />
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Confirm Application</h3>
