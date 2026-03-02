@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { GraduationCap, Menu, X, User, LogOut, Briefcase } from 'lucide-react';
+import { GraduationCap, Menu, X, LogOut, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
@@ -19,12 +19,10 @@ const Navbar = () => {
         ? [
             { name: 'Dashboard', path: '/retailer' },
             { name: 'Post Job', path: '/retailer/post-job' },
-            { name: 'Applicants', path: '/retailer/applicants' },
         ]
         : [
             { name: 'Find Jobs', path: '/jobs' },
             { name: 'My Applications', path: '/student/applications' },
-            { name: 'Profile', path: '/student/profile' },
         ];
 
     const handleLogout = () => {
@@ -54,8 +52,8 @@ const Navbar = () => {
                                 key={link.name}
                                 to={link.path}
                                 className={`text-sm font-medium transition-colors duration-200 ${location.pathname === link.path
-                                        ? 'text-olive-600'
-                                        : 'text-gray-500 hover:text-gray-900'
+                                    ? 'text-olive-600'
+                                    : 'text-gray-500 hover:text-gray-900'
                                     }`}
                             >
                                 {link.name}
@@ -65,10 +63,20 @@ const Navbar = () => {
                         <div className="flex items-center gap-4 pl-4 border-l border-gray-200">
                             {user ? (
                                 <div className="flex items-center gap-4">
-                                    <div className="text-right hidden lg:block">
-                                        <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                                    <button
+                                        onClick={() => navigate('/inbox')}
+                                        className="p-2 rounded-full hover:bg-gray-50 text-gray-500 hover:text-emerald-500 transition-colors"
+                                        title="Inbox"
+                                    >
+                                        <Mail className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => navigate(user.role === 'retailer' ? '/retailer/profile' : '/student/profile')}
+                                        className="text-right hidden lg:block hover:opacity-80 transition-opacity text-left"
+                                    >
+                                        <p className="text-sm font-medium text-gray-900 hover:text-olive-600 transition-colors">{user.name}</p>
                                         <p className="text-xs text-gray-500 capitalize">{user.role}</p>
-                                    </div>
+                                    </button>
                                     <button
                                         onClick={handleLogout}
                                         className="p-2 rounded-full hover:bg-gray-50 text-gray-500 hover:text-red-500 transition-colors"
@@ -105,8 +113,8 @@ const Navbar = () => {
                             key={link.name}
                             to={link.path}
                             className={`block px-4 py-3 rounded-xl text-base font-medium transition-colors ${location.pathname === link.path
-                                    ? 'bg-olive-50 text-olive-700'
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                ? 'bg-olive-50 text-olive-700'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                 }`}
                             onClick={() => setIsOpen(false)}
                         >

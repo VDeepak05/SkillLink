@@ -54,3 +54,124 @@ body {
 }
 
 /* 🌌 Premium Dark Animated Gradient */
+
+/* ==========================================================================
+   React DatePicker Custom Aesthetic Theme
+   ========================================================================== */
+
+.react-datepicker {
+    font-family: var(--font-sans) !important;
+    background-color: rgba(30, 41, 59, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    backdrop-filter: blur(16px) !important;
+    overflow: hidden;
+}
+
+.react-datepicker__header {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    padding-top: 1rem !important;
+    border-top-left-radius: 1rem !important;
+    border-top-right-radius: 1rem !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker-time__header,
+.react-datepicker-year-header {
+    color: #fff !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    letter-spacing: 0.025em !important;
+}
+
+.react-datepicker__day-name {
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-weight: 600 !important;
+    margin: 0.2rem !important;
+    width: 2rem !important;
+}
+
+.react-datepicker__day {
+    color: #e2e8f0 !important;
+    margin: 0.2rem !important;
+    width: 2rem !important;
+    line-height: 2rem !important;
+    border-radius: 0.5rem !important;
+    transition: all 0.2s ease !important;
+}
+
+.react-datepicker__day:hover {
+    background-color: rgba(16, 185, 129, 0.3) !important;
+    color: #fff !important;
+    transform: scale(1.1);
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    color: #ffffff !important;
+    font-weight: bold !important;
+    box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.39) !important;
+    transform: scale(1.05);
+}
+
+.react-datepicker__day--outside-month {
+    color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.react-datepicker__day--disabled {
+    color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.react-datepicker__day--disabled:hover {
+    background-color: transparent !important;
+    transform: none !important;
+}
+
+.react-datepicker__navigation-icon::before {
+    border-color: rgba(255, 255, 255, 0.6) !important;
+    transition: border-color 0.2s ease !important;
+}
+
+.react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
+    border-color: #10b981 !important;
+}
+
+.react-datepicker__year-dropdown,
+.react-datepicker__month-dropdown,
+.react-datepicker__month-year-dropdown {
+    background-color: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+    border-radius: 0.75rem !important;
+}
+
+.react-datepicker__year-option,
+.react-datepicker__month-option,
+.react-datepicker__month-year-option {
+    color: #e2e8f0 !important;
+    padding: 0.5rem !important;
+    transition: background-color 0.2s ease, color 0.2s ease !important;
+}
+
+.react-datepicker__year-option:hover,
+.react-datepicker__month-option:hover,
+.react-datepicker__month-year-option:hover {
+    background-color: #10b981 !important;
+    color: #fff !important;
+}
+
+.react-datepicker__year-read-view--down-arrow,
+.react-datepicker__month-read-view--down-arrow,
+.react-datepicker__month-year-read-view--down-arrow {
+    border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.react-datepicker__year-read-view:hover .react-datepicker__year-read-view--down-arrow,
+.react-datepicker__month-read-view:hover .react-datepicker__month-read-view--down-arrow {
+    border-color: #10b981 !important;
+}
+
+/* Light Theme Overrides (if darkMode is false, .react-datepicker won't be inside a dark wrapper normally, but we can set generic styles or assume it adapts if we use context. For now, since Login uses animated dark mostly, this premium dark glass fits the overarching vibe requested). */

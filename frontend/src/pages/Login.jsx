@@ -4,6 +4,8 @@ import { GraduationCap, Store, Sun, Moon, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import JobHunt from "../images/JobHunt.svg";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -13,12 +15,14 @@ const Login = () => {
     const [activeRole, setActiveRole] = useState(null); // 'student' or 'retailer'
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
     const [formData, setFormData] = useState({
         name: "", // Student: name, Retailer: owner_name
         email: "",
         password: "",
         college: "", // Student
+        college_reg_no: "", // Student
         dob: "", // Student
         phone_no: "", // Student
         shop_name: "", // Retailer
@@ -51,6 +55,7 @@ const Login = () => {
     const handleAuth = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setErrorMsg("");
 
         const endpoint = isLogin
             ? "http://localhost:8000/auth/signin"
@@ -64,6 +69,7 @@ const Login = () => {
             payload = {
                 name: formData.name,
                 college: formData.college,
+                college_reg_no: formData.college_reg_no,
                 dob: formData.dob,
                 phone_no: formData.phone_no,
                 email: formData.email,
@@ -90,20 +96,45 @@ const Login = () => {
             const data = await res.json();
 
             if (res.ok) {
+                // Check if Retailer is verified before allowing them in
+                if (data.role === 'retailer' && data.verified === false) {
+                    setErrorMsg("Your shop is currently pending admin verification. Please try again later.");
+                    setLoading(false);
+                    return;
+                }
+
                 // Pass the full user object to AuthContext
                 login({
                     id: data.id,
                     name: data.name,
                     role: data.role,
-                    email: data.email
+                    email: data.email,
+                    verified: data.verified
                 });
-                navigate(data.role === "student" ? "/jobs" : "/retailer");
+
+                if (data.role === "student") {
+                    if (!isLogin) {
+                        navigate("/student/setup"); // Onboarding for new signups
+                    } else {
+                        navigate("/jobs");
+                    }
+                } else {
+                    navigate("/retailer");
+                }
             } else {
-                alert(data.detail || "Authentication Failed");
+                let errorText = "Authentication Failed";
+                if (data.detail) {
+                    if (typeof data.detail === 'string') {
+                        errorText = data.detail;
+                    } else if (Array.isArray(data.detail)) {
+                        errorText = data.detail.map(e => e.msg).join(", ");
+                    }
+                }
+                setErrorMsg(errorText);
             }
         } catch (error) {
             console.error(error);
-            alert("An error occurred during authentication.");
+            setErrorMsg("An error occurred during authentication.");
         }
         setLoading(false);
     };
@@ -292,12 +323,44 @@ const Login = () => {
                                         {isLogin ? `Sign In as ${activeRole === 'student' ? 'Student' : 'Retailer'}` : `Sign Up as ${activeRole === 'student' ? 'Student' : 'Retailer'}`}
                                     </h2>
 
+                                    {errorMsg && (
+                                        <div className="mb-4 p-3 rounded-xl bg-red-500/20 border border-red-500/50 text-red-200 text-sm text-center">
+                                            {errorMsg}
+                                        </div>
+                                    )}
+
                                     <form onSubmit={handleAuth} className="space-y-4">
                                         {!isLogin && activeRole === "student" && (
                                             <>
                                                 <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Full Name" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors" />
                                                 <input type="text" name="college" value={formData.college} onChange={handleChange} placeholder="College Name" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors" />
-                                                <input type="date" name="dob" value={formData.dob} onChange={handleChange} placeholder="Date of Birth" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors" />
+                                                <input type="text" name="college_reg_no" value={formData.college_reg_no} onChange={handleChange} placeholder="College Registration Number" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors" />
+
+                                                <div className="w-full">
+                                                    <DatePicker
+                                                        selected={formData.dob ? new Date(formData.dob) : null}
+                                                        onChange={(date) => {
+                                                            if (date) {
+                                                                const year = date.getFullYear();
+                                                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                                                const day = String(date.getDate()).padStart(2, '0');
+                                                                handleChange({ target: { name: 'dob', value: `${year}-${month}-${day}` } });
+                                                            } else {
+                                                                handleChange({ target: { name: 'dob', value: '' } });
+                                                            }
+                                                        }}
+                                                        dateFormat="yyyy-MM-dd"
+                                                        placeholderText="Date of Birth"
+                                                        maxDate={new Date()}
+                                                        showYearDropdown
+                                                        scrollableYearDropdown
+                                                        yearDropdownItemNumber={100}
+                                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                                                        wrapperClassName="w-full"
+                                                        required
+                                                    />
+                                                </div>
+
                                                 <input type="tel" name="phone_no" value={formData.phone_no} onChange={handleChange} placeholder="Phone Number" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors" />
                                             </>
                                         )}

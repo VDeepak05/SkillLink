@@ -10,6 +10,12 @@ const Home = () => {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // Filter States
+    const [maxDistance, setMaxDistance] = useState(20);
+    const [selectedShifts, setSelectedShifts] = useState([]);
+    const [shopType, setShopType] = useState('All Types');
+    const [minSalary, setMinSalary] = useState(0);
+
     useEffect(() => {
         fetch('http://localhost:8000/jobs')
             .then(res => res.json())
@@ -19,7 +25,7 @@ const Home = () => {
                     title: job.job_title,
                     shopName: job.shop_name || "Retail Shop",
                     shopType: job.shop_type,
-                    location: job.area || "Bangalore",
+                    location: job.area || "Palakkad",
                     distance: (Math.random() * 5 + 1).toFixed(1), // Mock distance for now
                     shift: job.shift_type,
                     days: job.is_seasonal ? 'Seasonal' : 'Mon-Fri',
@@ -41,12 +47,19 @@ const Home = () => {
     }, []);
 
     const filteredJobs = useMemo(() => {
-        return jobs.filter((job) =>
-            `${job.title} ${job.location} ${job.shopName}`
+        return jobs.filter((job) => {
+            const matchesSearch = `${job.title} ${job.location} ${job.shopName}`
                 .toLowerCase()
-                .includes(searchTerm.toLowerCase())
-        );
-    }, [searchTerm, jobs]);
+                .includes(searchTerm.toLowerCase());
+
+            const matchesDistance = parseFloat(job.distance) <= maxDistance;
+            const matchesShift = selectedShifts.length === 0 || selectedShifts.includes(job.shift);
+            const matchesType = shopType === 'All Types' || job.shopType === shopType;
+            const matchesSalary = job.salary >= minSalary;
+
+            return matchesSearch && matchesDistance && matchesShift && matchesType && matchesSalary;
+        });
+    }, [searchTerm, jobs, maxDistance, selectedShifts, shopType, minSalary]);
 
     return (
         <div
@@ -128,7 +141,13 @@ const Home = () => {
                             : "bg-white/80 border-gray-200"
                             }`}
                     >
-                        <FilterPanel darkMode={darkMode} />
+                        <FilterPanel
+                            darkMode={darkMode}
+                            maxDistance={maxDistance} setMaxDistance={setMaxDistance}
+                            selectedShifts={selectedShifts} setSelectedShifts={setSelectedShifts}
+                            shopType={shopType} setShopType={setShopType}
+                            minSalary={minSalary} setMinSalary={setMinSalary}
+                        />
                     </aside>
 
                     {/* JOB LIST */}
