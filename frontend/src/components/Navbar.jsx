@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { GraduationCap, Menu, X, LogOut, Mail } from 'lucide-react';
+import { Menu, X, LogOut, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import SkillLinkLogo from '../images/SkillLinkLogoProject.png';
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -23,6 +24,7 @@ const Navbar = () => {
         : [
             { name: 'Find Jobs', path: '/jobs' },
             { name: 'My Applications', path: '/student/applications' },
+            { name: 'My Wishlist', path: '/student/wishlist' },
         ];
 
     const handleLogout = () => {
@@ -36,11 +38,9 @@ const Navbar = () => {
                 <div className="flex justify-between h-20">
                     <div className="flex items-center">
                         <Link to={isRetailer ? "/retailer" : "/jobs"} className="flex items-center gap-2">
-                            <div className="bg-olive-500 p-2.5 rounded-xl shadow-lg shadow-olive-500/20">
-                                <GraduationCap className="h-6 w-6 text-white" />
-                            </div>
+                            <img src={SkillLinkLogo} alt="SkiLink Logo" className="h-10 object-contain drop-shadow-md" />
                             <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 text-transparent bg-clip-text">
-                                StudentWorks
+                                SkiLink
                             </span>
                         </Link>
                     </div>

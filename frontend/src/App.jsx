@@ -10,6 +10,8 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentSetup from './pages/StudentSetup';
 import StudentProfilePage from './pages/StudentProfilePage';
+import StudentApplications from './pages/StudentApplications';
+import StudentWishlist from './pages/StudentWishlist';
 import RetailerProfilePage from './pages/RetailerProfilePage';
 import Inbox from './pages/Inbox';
 import { AuthProvider } from './context/AuthContext';
@@ -25,6 +27,8 @@ function App() {
           <Route path="/jobs" element={<Home />} />
           <Route path="/jobs/:id" element={<JobDetails />} />
           <Route path="/student/profile" element={<StudentProfilePage />} />
+          <Route path="/student/applications" element={<StudentApplications />} />
+          <Route path="/student/wishlist" element={<StudentWishlist />} />
           <Route path="/inbox" element={<Inbox />} />
 
           {/* Retailer Routes */}

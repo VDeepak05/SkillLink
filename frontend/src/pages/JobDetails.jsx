@@ -11,13 +11,15 @@ const JobDetails = () => {
     const [loading, setLoading] = useState(true);
     const [applying, setApplying] = useState(false);
     const [applied, setApplied] = useState(false);
+    const [saved, setSaved] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     useEffect(() => {
-        fetch(`http://localhost:8000/jobs/${id}`)
-            .then(res => res.json())
-            .then(data => {
-                setJob({
+        const fetchJobData = async () => {
+            try {
+                const res = await fetch(`http://localhost:8000/jobs/${id}`);
+                const data = await res.json();
+                const jobDetails = {
                     id: data.id,
                     job_id: data.job_id,
                     title: data.job_title,
@@ -31,14 +33,62 @@ const JobDetails = () => {
                     openings: data.openings || 1,
                     skills: ['Basic Math', 'Communication', 'Punctuality'],
                     posted: 'Recently'
-                });
+                };
+                setJob(jobDetails);
+
+                // Check application and wishlist status if user is student
+                if (user && user.role === 'student') {
+                    // Check application
+                    const statusRes = await fetch(`http://localhost:8000/jobs/${data.job_id}/status/${user.id}`);
+                    if (statusRes.ok) {
+                        const statusData = await statusRes.json();
+                        setApplied(statusData.applied);
+                    }
+
+                    // Check wishlist
+                    const wishlistRes = await fetch(`http://localhost:8000/student/wishlist/${user.id}`);
+                    if (wishlistRes.ok) {
+                        const wishlistData = await wishlistRes.json();
+                        const isSaved = wishlistData.wishlist.some(j => j.job_id === data.job_id || j.id === data.id);
+                        setSaved(isSaved);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch job info:", err);
+            } finally {
                 setLoading(false);
-            })
-            .catch(err => {
-                console.error("Failed to fetch job:", err);
-                setLoading(false);
+            }
+        };
+
+        fetchJobData();
+    }, [id, user]);
+
+    const handleToggleWishlist = async () => {
+        if (!user || user.role !== 'student') {
+            alert("Please log in as a student to save jobs.");
+            return;
+        }
+
+        try {
+            const res = await fetch('http://localhost:8000/student/wishlist/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    student_id: user.id,
+                    job_id: job.job_id
+                })
             });
-    }, [id]);
+
+            if (res.ok) {
+                const data = await res.json();
+                setSaved(data.action === 'added');
+            } else {
+                alert("Failed to update wishlist");
+            }
+        } catch (error) {
+            console.error("Wishlist error:", error);
+        }
+    };
 
     const initiateApplication = () => {
         if (!user || user.role !== 'student') {
@@ -231,8 +281,14 @@ const JobDetails = () => {
                                         >
                                             {applied ? "Applied Successfully ✓" : (applying ? "Applying..." : "Apply Now")}
                                         </button>
-                                        <button className="w-full bg-white text-gray-700 py-3.5 rounded-xl font-bold border border-gray-200 hover:bg-gray-50 transition-colors">
-                                            Save for Later
+                                        <button
+                                            onClick={handleToggleWishlist}
+                                            className={`w-full py-3.5 rounded-xl font-bold border transition-colors ${saved
+                                                ? "bg-red-50 text-red-600 border-red-100 hover:bg-red-100"
+                                                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                                                }`}
+                                        >
+                                            {saved ? "Saved to Wishlist" : "Save for Later"}
                                         </button>
                                         <p className="text-xs text-center text-gray-500 mt-4 font-medium">
                                             2 other students applied today

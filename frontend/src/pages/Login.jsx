@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { GraduationCap, Store, Sun, Moon, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-import JobHunt from "../images/JobHunt.svg";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import SkilinkLogo from "../images/SkillLinkLogo.png";
+// import DatePicker from "react-datepicker";
+// import "react-datepicker/dist/react-datepicker.css";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -174,29 +174,16 @@ const Login = () => {
                     initial={{ x: -80, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ duration: 1 }}
-                    className="flex-1 text-center md:text-left"
+                    className="flex-1 flex flex-col justify-center items-center md:items-start"
                 >
                     <motion.img
-                        src={JobHunt}
-                        alt="Student working"
-                        className="w-80 md:w-96 mx-auto md:mx-0"
+                        src={SkilinkLogo}
+                        alt="SkiLink Logo"
+                        className={`w-72 md:w-[28rem] lg:w-[32rem] mx-auto md:mx-0 object-contain transition-all duration-500 ${darkMode ? 'brightness-0 invert drop-shadow-[0_4px_12px_rgba(255,255,255,0.1)]' : 'drop-shadow-2xl'
+                            }`}
                         animate={{ y: [0, -12, 0] }}
                         transition={{ duration: 5, repeat: Infinity }}
                     />
-
-                    <h1
-                        className={`text-4xl md:text-5xl font-extrabold mt-6 transition-colors duration-500 ${darkMode ? "text-white" : "text-gray-900"
-                            }`}
-                    >
-                        StudentWorks
-                    </h1>
-
-                    <p
-                        className={`mt-4 text-lg transition-colors duration-500 ${darkMode ? "text-gray-300" : "text-gray-600"
-                            }`}
-                    >
-                        Connect, work, and earn while you learn.
-                    </p>
                 </motion.div>
 
                 {/* RIGHT SIDE - CARD */}
@@ -227,7 +214,11 @@ const Login = () => {
                                     className="space-y-6"
                                 >
                                     <div
-                                        onClick={() => setActiveRole("student")}
+                                        onClick={() => {
+                                            setActiveRole("student");
+                                            setErrorMsg("");
+                                            setFormData({ ...formData, email: "", password: "" });
+                                        }}
                                         className={`flex items-center gap-4 p-5 
                                         rounded-2xl hover:scale-105
                                         transition-all duration-300 cursor-pointer
@@ -265,7 +256,11 @@ const Login = () => {
                                     </div>
 
                                     <div
-                                        onClick={() => setActiveRole("retailer")}
+                                        onClick={() => {
+                                            setActiveRole("retailer");
+                                            setErrorMsg("");
+                                            setFormData({ ...formData, email: "", password: "" });
+                                        }}
                                         className={`flex items-center gap-4 p-5 
                                         rounded-2xl hover:scale-105
                                         transition-all duration-300 cursor-pointer
@@ -313,6 +308,7 @@ const Login = () => {
                                         onClick={() => {
                                             setActiveRole(null);
                                             setIsLogin(true);
+                                            setErrorMsg("");
                                         }}
                                         className={`flex items-center gap-2 mb-6 text-sm hover:underline ${darkMode ? "text-emerald-400" : "text-emerald-600"}`}
                                     >
@@ -337,27 +333,15 @@ const Login = () => {
                                                 <input type="text" name="college_reg_no" value={formData.college_reg_no} onChange={handleChange} placeholder="College Registration Number" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors" />
 
                                                 <div className="w-full">
-                                                    <DatePicker
-                                                        selected={formData.dob ? new Date(formData.dob) : null}
-                                                        onChange={(date) => {
-                                                            if (date) {
-                                                                const year = date.getFullYear();
-                                                                const month = String(date.getMonth() + 1).padStart(2, '0');
-                                                                const day = String(date.getDate()).padStart(2, '0');
-                                                                handleChange({ target: { name: 'dob', value: `${year}-${month}-${day}` } });
-                                                            } else {
-                                                                handleChange({ target: { name: 'dob', value: '' } });
-                                                            }
-                                                        }}
-                                                        dateFormat="yyyy-MM-dd"
-                                                        placeholderText="Date of Birth"
-                                                        maxDate={new Date()}
-                                                        showYearDropdown
-                                                        scrollableYearDropdown
-                                                        yearDropdownItemNumber={100}
-                                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors"
-                                                        wrapperClassName="w-full"
+                                                    <label className="block text-xs font-semibold text-gray-400 mb-1 ml-1">Date of Birth</label>
+                                                    <input
+                                                        type="date"
+                                                        name="dob"
+                                                        value={formData.dob}
+                                                        onChange={handleChange}
+                                                        max={new Date().toISOString().split('T')[0]}
                                                         required
+                                                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors"
                                                     />
                                                 </div>
 
@@ -391,7 +375,10 @@ const Login = () => {
 
                                     <p className={`mt-6 text-center text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                                         {isLogin ? "Don't have an account? " : "Already have an account? "}
-                                        <button onClick={() => setIsLogin(!isLogin)} className="text-emerald-500 hover:underline font-semibold">
+                                        <button onClick={() => {
+                                            setIsLogin(!isLogin);
+                                            setErrorMsg("");
+                                        }} className="text-emerald-500 hover:underline font-semibold">
                                             {isLogin ? "Sign Up" : "Sign In"}
                                         </button>
                                     </p>

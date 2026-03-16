@@ -70,7 +70,7 @@ const AdminLogin = () => {
                     Admin Portal
                 </h1>
                 <p className={`text-center text-sm mb-8 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                    Restricted access area for SkillLink management.
+                    Restricted access area for SkiLink management.
                 </p>
 
                 {errorMsg && (

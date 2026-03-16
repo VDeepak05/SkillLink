@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { User, Mail, Phone, Calendar, BookOpen, Hash, Check, Save, Lock, Edit2, X } from "lucide-react";
+import { User, Mail, Phone, Calendar, BookOpen, Hash, Check, Save, Lock, Edit2, X, AlertCircle, Loader2, CheckCircle2, GraduationCap, Sun, Moon, Monitor, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -25,12 +26,23 @@ const StudentProfilePage = () => {
     const [selectedSkills, setSelectedSkills] = useState([]);
     const [savingSkills, setSavingSkills] = useState(false);
 
-    // Password change state
     const [oldPassword, setOldPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [pwdStatus, setPwdStatus] = useState({ msg: "", type: "" });
     const [changingPwd, setChangingPwd] = useState(false);
+
+    // Theme State
+    const [darkMode, setDarkMode] = useState(() => {
+        const saved = localStorage.getItem("theme");
+        return saved !== "light"; // Default to dark
+    });
+
+    const toggleTheme = () => {
+        const newMode = !darkMode;
+        setDarkMode(newMode);
+        localStorage.setItem("theme", newMode ? "dark" : "light");
+    };
 
     useEffect(() => {
         if (!user || user.role !== "student") {
@@ -63,7 +75,6 @@ const StudentProfilePage = () => {
     const handleSaveProfile = async () => {
         setProfileErrorMsgs("");
 
-        // Age validation
         if (editedProfile.dob) {
             const today = new Date();
             const birthDate = new Date(editedProfile.dob);
@@ -73,7 +84,7 @@ const StudentProfilePage = () => {
                 age--;
             }
             if (age < 18) {
-                setProfileErrorMsgs("Age cannot be less than 18");
+                setProfileErrorMsgs("You must be at least 18 years old.");
                 return;
             }
         }
@@ -94,16 +105,14 @@ const StudentProfilePage = () => {
             if (res.ok) {
                 setProfile(editedProfile);
                 setIsEditingProfile(false);
-                // Also update User context name if it changed
                 if (editedProfile.name !== user.name) {
                     login({ ...user, name: editedProfile.name });
                 }
             } else {
-                alert("Failed to update profile.");
+                alert("Update failed.");
             }
         } catch (error) {
             console.error("Profile save error:", error);
-            alert("Network error while saving profile.");
         }
         setSavingProfile(false);
     };
@@ -125,7 +134,7 @@ const StudentProfilePage = () => {
                 body: JSON.stringify({ skills: selectedSkills })
             });
             if (res.ok) {
-                alert("Skills update successful!");
+                alert("Skills synchronized!");
             }
         } catch (error) {
             console.error("Skills save error:", error);
@@ -138,12 +147,7 @@ const StudentProfilePage = () => {
         setPwdStatus({ msg: "", type: "" });
 
         if (newPassword !== confirmPassword) {
-            setPwdStatus({ msg: "New passwords do not match.", type: "error" });
-            return;
-        }
-
-        if (newPassword.length < 6) {
-            setPwdStatus({ msg: "New password must be at least 6 characters.", type: "error" });
+            setPwdStatus({ msg: "Passwords do not match.", type: "error" });
             return;
         }
 
@@ -156,31 +160,27 @@ const StudentProfilePage = () => {
             });
 
             if (res.ok) {
-                setPwdStatus({ msg: "Password changed successfully! Please log in again.", type: "success" });
-                setOldPassword("");
-                setNewPassword("");
-                setConfirmPassword("");
-
+                setPwdStatus({ msg: "Success! Logging you out for security.", type: "success" });
                 setTimeout(() => {
                     logout();
                     navigate("/");
-                }, 2500);
+                }, 2000);
             } else {
                 const data = await res.json();
-                setPwdStatus({ msg: data.detail || "Failed to change password.", type: "error" });
+                setPwdStatus({ msg: data.detail || "Update failed.", type: "error" });
             }
         } catch (error) {
-            console.error("Password change error:", error);
             setPwdStatus({ msg: "Network error.", type: "error" });
         }
         setChangingPwd(false);
     };
 
-    if (!profile) return <div className="text-center py-20 font-bold text-gray-500">Loading profile...</div>;
+    if (!profile) return (
+        <div className="min-h-screen dark-animated-gradient flex items-center justify-center">
+            <Loader2 className="h-12 w-12 text-emerald-500 animate-spin" />
+        </div>
+    );
 
-    const isDarkMode = document.documentElement.classList.contains("dark") || localStorage.getItem("theme") === "dark";
-
-    // Sort skills so selected ones are at the top
     const sortedSkills = [...SKILL_OPTIONS].sort((a, b) => {
         if (selectedSkills.includes(a) && !selectedSkills.includes(b)) return -1;
         if (!selectedSkills.includes(a) && selectedSkills.includes(b)) return 1;
@@ -188,250 +188,240 @@ const StudentProfilePage = () => {
     });
 
     return (
-        <div className={`min-h-screen pt-10 pb-20 ${isDarkMode ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"} transition-colors duration-500`}>
-            <div className="max-w-4xl mx-auto px-6">
+        <div className={`min-h-screen transition-all duration-700 ${darkMode ? "dark-animated-gradient" : "bg-gradient-to-br from-emerald-50 via-white to-green-100"} py-12 px-6`}>
+            <div className="max-w-4xl mx-auto">
 
-                <h1 className="text-3xl font-bold mb-8 flex items-center gap-3">
-                    <User className="text-olive-600" size={32} />
-                    Student Profile
-                </h1>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-between items-end mb-12"
+                >
+                    <div>
+                        <h1 className={`text-4xl font-extrabold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>My Profile</h1>
+                        <p className={`${darkMode ? "text-emerald-400" : "text-emerald-600"} font-medium font-outfit italic tracking-wide`}>Manage your student credentials</p>
+                    </div>
+                </motion.div>
 
-                {/* Personal Information Card */}
-                <div className={`rounded-3xl p-8 mb-8 border shadow-sm ${isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100"}`}>
-                    <div className="flex justify-between items-center mb-6 border-b pb-4">
-                        <h2 className="text-xl font-bold flex items-center gap-2">Personal Information</h2>
-                        {!isEditingProfile ? (
-                            <button
-                                onClick={() => {
-                                    setEditedProfile(profile);
-                                    setIsEditingProfile(true);
-                                }}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${isDarkMode ? "bg-slate-700 hover:bg-slate-600 text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}`}
-                            >
-                                <Edit2 size={16} /> Edit Profile
-                            </button>
-                        ) : (
-                            <div className="flex gap-2">
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                    {/* Left Column - Personal Info */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="lg:col-span-2 space-y-8"
+                    >
+                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white/80 border-gray-200"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl relative overflow-hidden group transition-all duration-500`}>
+                            <div className="absolute top-0 right-0 p-6">
+                                {!isEditingProfile ? (
+                                    <button
+                                        onClick={() => {
+                                            setEditedProfile(profile);
+                                            setIsEditingProfile(true);
+                                        }}
+                                        className="bg-white/5 hover:bg-emerald-500/20 p-3 rounded-2xl transition-all text-emerald-400 border border-white/5 hover:border-emerald-500/30"
+                                    >
+                                        <Edit2 size={20} />
+                                    </button>
+                                ) : (
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setIsEditingProfile(false);
+                                                setProfileErrorMsgs("");
+                                            }}
+                                            className="bg-white/5 hover:bg-red-500/20 p-3 rounded-2xl transition-all text-red-400 border border-white/5 hover:border-red-500/30"
+                                        >
+                                            <X size={20} />
+                                        </button>
+                                        <button
+                                            onClick={handleSaveProfile}
+                                            disabled={savingProfile}
+                                            className="bg-emerald-500 hover:bg-emerald-600 p-3 rounded-2xl transition-all text-white shadow-lg shadow-emerald-500/20"
+                                        >
+                                            {savingProfile ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <h2 className={`text-xl font-bold mb-8 flex items-center gap-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                <span className={`p-2 rounded-lg ${darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-600"}`}><User size={20} /></span>
+                                Personal Details
+                            </h2>
+
+                            {profileErrorMsgs && (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold flex items-center gap-3">
+                                    <AlertCircle size={18} />
+                                    {profileErrorMsgs}
+                                </motion.div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+                                <ProfileField icon={<User />} label="Full Name" name="name" value={isEditingProfile ? editedProfile.name : profile.name} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
+                                <ProfileField icon={<Mail />} label="Email" name="email" value={profile.email} editing={false} darkMode={darkMode} />
+                                <ProfileField icon={<Phone />} label="Phone" name="phone_no" value={isEditingProfile ? editedProfile.phone_no : profile.phone_no} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
+                                <ProfileField icon={<Calendar />} label="Date of Birth" name="dob" value={isEditingProfile ? editedProfile.dob : profile.dob} editing={isEditingProfile} onChange={handleProfileChange} type="date" darkMode={darkMode} />
+                                <ProfileField icon={<BookOpen />} label="College" name="college" value={isEditingProfile ? editedProfile.college : profile.college} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
+                                <ProfileField icon={<Hash />} label="Reg. Number" name="college_reg_no" value={isEditingProfile ? editedProfile.college_reg_no : profile.college_reg_no} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
+                            </div>
+                        </div>
+
+                        {/* Skills Section */}
+                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white/80 border-gray-200"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500`}>
+                            <div className="flex justify-between items-center mb-8">
+                                <h2 className={`text-xl font-bold flex items-center gap-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                    <span className={`p-2 rounded-lg ${darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-600"}`}><CheckCircle2 size={20} /></span>
+                                    Skill Set
+                                </h2>
                                 <button
-                                    onClick={() => {
-                                        setIsEditingProfile(false);
-                                        setProfileErrorMsgs("");
-                                    }}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${isDarkMode ? "bg-slate-700 hover:bg-slate-600 text-gray-300" : "bg-gray-100 hover:bg-gray-200 text-gray-600"}`}
+                                    onClick={handleSaveSkills}
+                                    disabled={savingSkills}
+                                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-2xl font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
                                 >
-                                    <X size={16} /> Cancel
-                                </button>
-                                <button
-                                    onClick={handleSaveProfile}
-                                    disabled={savingProfile}
-                                    className="bg-olive-600 hover:bg-olive-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-md"
-                                >
-                                    {savingProfile ? "Saving..." : <><Save size={16} /> Save</>}
+                                    {savingSkills ? <Loader2 className="animate-spin" size={18} /> : <span>Update Skills</span>}
                                 </button>
                             </div>
-                        )}
-                    </div>
 
-                    {profileErrorMsgs && (
-                        <div className="mb-6 p-3 rounded-xl bg-red-500/20 border border-red-500/50 text-red-500 text-sm text-center font-bold">
-                            {profileErrorMsgs}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                {sortedSkills.map(skill => (
+                                    <button
+                                        key={skill}
+                                        onClick={() => toggleSkill(skill)}
+                                        className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 text-xs font-bold text-center group/skill
+                                            ${selectedSkills.includes(skill)
+                                                ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
+                                                : "bg-white/5 border-white/5 hover:border-emerald-500/30 text-gray-400 hover:text-emerald-300"
+                                            }`}
+                                    >
+                                        <div className={`p-1.5 rounded-full transition-all ${selectedSkills.includes(skill) ? "bg-emerald-500/20" : "bg-white/5 group-hover/skill:bg-emerald-500/10"}`}>
+                                            {selectedSkills.includes(skill) ? <Check size={14} /> : <div className="w-3.5 h-3.5" />}
+                                        </div>
+                                        {skill}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    )}
+                    </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <InfoRow
-                            icon={<User size={18} />}
-                            label="Full Name"
-                            name="name"
-                            value={isEditingProfile ? editedProfile.name : profile.name}
-                            dark={isDarkMode}
-                            isEditing={isEditingProfile}
-                            onChange={handleProfileChange}
-                        />
-                        <InfoRow
-                            icon={<Mail size={18} />}
-                            label="Email Address"
-                            name="email"
-                            value={profile.email}
-                            dark={isDarkMode}
-                            isEditing={false} // Email shouldn't be editable here usually
-                        />
-                        <InfoRow
-                            icon={<Phone size={18} />}
-                            label="Phone Number"
-                            name="phone_no"
-                            value={isEditingProfile ? editedProfile.phone_no : profile.phone_no}
-                            dark={isDarkMode}
-                            isEditing={isEditingProfile}
-                            onChange={handleProfileChange}
-                        />
-                        <InfoRow
-                            icon={<Calendar size={18} />}
-                            label="Date of Birth"
-                            name="dob"
-                            value={isEditingProfile ? editedProfile.dob : profile.dob}
-                            dark={isDarkMode}
-                            isEditing={isEditingProfile}
-                            customInput={isEditingProfile && (
-                                <DatePicker
-                                    selected={editedProfile.dob ? new Date(editedProfile.dob) : null}
-                                    onChange={(date) => {
-                                        if (date) {
-                                            const year = date.getFullYear();
-                                            const month = String(date.getMonth() + 1).padStart(2, '0');
-                                            const day = String(date.getDate()).padStart(2, '0');
-                                            handleProfileChange({ target: { name: 'dob', value: `${year}-${month}-${day}` } });
-                                        } else {
-                                            handleProfileChange({ target: { name: 'dob', value: '' } });
-                                        }
-                                    }}
-                                    dateFormat="yyyy-MM-dd"
-                                    placeholderText="Date of Birth"
-                                    maxDate={new Date()}
-                                    showYearDropdown
-                                    scrollableYearDropdown
-                                    yearDropdownItemNumber={100}
-                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-olive-500 transition-colors ${isDarkMode ? "bg-slate-900 border-slate-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
-                                    wrapperClassName="w-full"
-                                    required
-                                />
-                            )}
-                        />
-                        <InfoRow
-                            icon={<BookOpen size={18} />}
-                            label="College Name"
-                            name="college"
-                            value={isEditingProfile ? editedProfile.college : profile.college}
-                            dark={isDarkMode}
-                            isEditing={isEditingProfile}
-                            onChange={handleProfileChange}
-                        />
-                        <InfoRow
-                            icon={<Hash size={18} />}
-                            label="Registration No."
-                            name="college_reg_no"
-                            value={isEditingProfile ? editedProfile.college_reg_no : profile.college_reg_no}
-                            dark={isDarkMode}
-                            isEditing={isEditingProfile}
-                            onChange={handleProfileChange}
-                        />
-                    </div>
-                </div>
+                    {/* Right Column - Account Actions */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="space-y-8"
+                    >
+                        {/* Display Settings Card */}
+                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white/80 border-gray-200"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500 mb-8`}>
+                            <h2 className={`text-xl font-bold mb-6 flex items-center gap-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                <span className={`p-2 rounded-lg ${darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-500"}`}>
+                                    <Settings size={20} />
+                                </span>
+                                Display Settings
+                            </h2>
 
-                {/* Skills Section */}
-                <div className={`rounded-3xl p-8 mb-8 border shadow-sm ${isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100"}`}>
-                    <div className="flex justify-between items-center mb-6 border-b pb-4">
-                        <h2 className="text-xl font-bold">My Skills</h2>
-                        <button
-                            onClick={handleSaveSkills}
-                            disabled={savingSkills}
-                            className="bg-olive-600 hover:bg-olive-700 text-white px-5 py-2 rounded-xl font-bold flex gap-2 transition-all shadow-md"
-                        >
-                            {savingSkills ? "Saving..." : <><Save size={18} /> Save Skills</>}
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                        {sortedSkills.map(skill => {
-                            const isSelected = selectedSkills.includes(skill);
-                            return (
+                            <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${darkMode ? "bg-white/5 border-white/5" : "bg-gray-50/50 border-gray-100"}`}>
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2.5 rounded-xl transition-all ${darkMode ? "bg-yellow-500/20 text-yellow-400" : "bg-indigo-500/10 text-indigo-600"}`}>
+                                        {darkMode ? <Moon size={20} /> : <Sun size={20} />}
+                                    </div>
+                                    <div>
+                                        <p className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>Appearance</p>
+                                        <p className="text-xs text-gray-500 font-medium">{darkMode ? "Dark Mode" : "Light Mode"}</p>
+                                    </div>
+                                </div>
                                 <button
-                                    key={skill}
-                                    onClick={() => toggleSkill(skill)}
-                                    className={`p-3 rounded-xl border transition-all flex flex-col items-center justify-center gap-1 text-xs font-bold text-center h-20
-                                        ${isSelected
-                                            ? "bg-emerald-500/10 border-emerald-500 text-emerald-600 shadow-sm"
-                                            : `${isDarkMode ? "bg-slate-700/50 border-slate-600 hover:border-emerald-500 hover:text-emerald-400" : "bg-gray-50 border-gray-200 hover:border-emerald-400 hover:text-emerald-600 text-gray-600"}`
-                                        }`}
+                                    onClick={toggleTheme}
+                                    className={`relative w-14 h-7 rounded-full transition-all duration-300 outline-none
+                                        ${darkMode ? "bg-emerald-500" : "bg-gray-300"}`}
                                 >
-                                    {isSelected ? <Check size={16} /> : <span>+</span>}
-                                    {skill}
+                                    <div className={`absolute top-1 left-1 bg-white w-5 h-5 rounded-full transition-all duration-500 shadow-lg flex items-center justify-center
+                                        ${darkMode ? "translate-x-7 rotate-0" : "translate-x-0 rotate-180"}`}
+                                    >
+                                        {darkMode ? <Moon size={12} className="text-emerald-500" /> : <Sun size={12} className="text-gray-400" />}
+                                    </div>
                                 </button>
-                            );
-                        })}
-                    </div>
+                            </div>
+                        </div>
+
+                        {/* Status Card */}
+                        <div className={`${darkMode ? "bg-emerald-500/10 border-emerald-500/20" : "bg-emerald-50 border-emerald-100"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500`}>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className={`p-3 rounded-2xl ${darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-white shadow-sm text-emerald-600"}`}>
+                                    <GraduationCap size={24} />
+                                </div>
+                                <div>
+                                    <p className={`text-xs font-bold uppercase tracking-widest ${darkMode ? "text-emerald-500/60" : "text-emerald-600/60"}`}>Profile Status</p>
+                                    <p className={`text-lg font-bold ${darkMode ? "text-white" : "text-emerald-700"}`}>Verified Student</p>
+                                </div>
+                            </div>
+                            <p className={`text-sm leading-relaxed ${darkMode ? "text-gray-400" : "text-gray-600 font-medium"}`}>
+                                Your profile is optimized for the best job matches. Keep your skills updated to receive tailored recommendations.
+                            </p>
+                        </div>
+
+                        {/* Password Change Card */}
+                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white/80 border-gray-200"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500`}>
+                            <h2 className={`text-xl font-bold mb-6 flex items-center gap-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                <span className={`p-2 rounded-lg ${darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-500"}`}><Lock size={20} /></span>
+                                Security
+                            </h2>
+
+                            {pwdStatus.msg && (
+                                <div className={`p-4 rounded-2xl mb-6 text-xs font-bold border ${pwdStatus.type === 'error' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
+                                    {pwdStatus.msg}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleChangePassword} className="space-y-5">
+                                <div className="space-y-2">
+                                    <label className={`text-xs font-bold uppercase tracking-widest ml-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Current Password</label>
+                                    <input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} required className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className={`text-xs font-bold uppercase tracking-widest ml-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>New Password</label>
+                                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all font-outfit ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className={`text-xs font-bold uppercase tracking-widest ml-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Confirm New</label>
+                                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`} />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={changingPwd}
+                                    className={`w-full border rounded-2xl px-5 py-4 font-bold transition-all shadow-xl flex items-center justify-center gap-2 group ${darkMode ? "bg-white/5 hover:bg-white/10 border-white/10 text-white" : "bg-white hover:bg-gray-50 border-gray-200 text-gray-900"}`}
+                                >
+                                    {changingPwd ? <Loader2 className="animate-spin" size={20} /> : "Update Credentials"}
+                                </button>
+                            </form>
+                        </div>
+                    </motion.div>
                 </div>
-
-                {/* Change Password Section */}
-                <div className={`rounded-3xl p-8 border shadow-sm ${isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100"}`}>
-                    <h2 className="text-xl font-bold mb-6 border-b pb-4 flex items-center gap-2">
-                        <Lock size={20} className="text-gray-400" />
-                        Change Password
-                    </h2>
-
-                    {pwdStatus.msg && (
-                        <div className={`p-4 rounded-xl mb-6 font-bold text-sm ${pwdStatus.type === 'error' ? 'bg-red-500/10 text-red-500 border border-red-500/30' : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'}`}>
-                            {pwdStatus.msg}
-                        </div>
-                    )}
-
-                    <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
-                        <div>
-                            <label className={`block text-sm font-bold mb-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Current Password</label>
-                            <input
-                                type="password"
-                                value={oldPassword}
-                                onChange={(e) => setOldPassword(e.target.value)}
-                                required
-                                className={`w-full px-4 py-3 rounded-xl border focus:outline-none transition-colors ${isDarkMode ? "bg-slate-900 border-slate-600 focus:border-olive-500" : "bg-gray-50 border-gray-200 focus:border-olive-500"}`}
-                            />
-                        </div>
-                        <div>
-                            <label className={`block text-sm font-bold mb-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>New Password</label>
-                            <input
-                                type="password"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                required
-                                className={`w-full px-4 py-3 rounded-xl border focus:outline-none transition-colors ${isDarkMode ? "bg-slate-900 border-slate-600 focus:border-olive-500" : "bg-gray-50 border-gray-200 focus:border-olive-500"}`}
-                            />
-                        </div>
-                        <div>
-                            <label className={`block text-sm font-bold mb-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Confirm New Password</label>
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
-                                className={`w-full px-4 py-3 rounded-xl border focus:outline-none transition-colors ${isDarkMode ? "bg-slate-900 border-slate-600 focus:border-olive-500" : "bg-gray-50 border-gray-200 focus:border-olive-500"}`}
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={changingPwd}
-                            className="w-full mt-4 bg-gray-900 hover:bg-black text-white px-5 py-3 rounded-xl font-bold transition-all shadow-md dark:bg-slate-700 dark:hover:bg-slate-600"
-                        >
-                            {changingPwd ? "Updating..." : "Update Password"}
-                        </button>
-                    </form>
-                </div>
-
             </div>
         </div>
     );
 };
 
-const InfoRow = ({ icon, label, name, value, dark, isEditing, onChange, type = "text", customInput }) => (
-    <div className="flex items-start gap-4">
-        <div className={`p-3 rounded-xl ${dark ? "bg-slate-700 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}>
-            {icon}
-        </div>
-        <div className="flex-1 w-full max-w-full">
-            <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${dark ? "text-gray-400" : "text-gray-500"}`}>{label}</p>
-            {isEditing ? (
-                customInput ? customInput : (
-                    <input
-                        type={type}
-                        name={name}
-                        value={value || ''}
-                        onChange={onChange}
-                        className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-olive-500 transition-colors ${dark ? "bg-slate-900 border-slate-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
-                    />
-                )
-            ) : (
-                <p className={`font-semibold text-lg ${dark ? "text-white" : "text-gray-900"}`}>{value || "Not provided"}</p>
-            )}
-        </div>
+const ProfileField = ({ icon, label, name, value, editing, onChange, type = "text", darkMode = true }) => (
+    <div className="space-y-3 group/field">
+        <label className={`flex items-center gap-2 text-xs font-bold uppercase tracking-widest ml-1 transform transition-transform group-focus-within/field:translate-x-1 ${darkMode ? "text-emerald-500/60" : "text-emerald-600/70"}`}>
+            <span className={darkMode ? "text-emerald-500" : "text-emerald-600"}>{React.cloneElement(icon, { size: 14 })}</span>
+            {label}
+        </label>
+        {editing ? (
+            <input
+                type={type}
+                name={name}
+                value={value || ''}
+                onChange={onChange}
+                className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all text-sm font-medium ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+            />
+        ) : (
+            <div className="px-1">
+                <p className={`text-lg font-bold tracking-tight ${darkMode ? "text-white" : "text-gray-900"}`}>{value || "—"}</p>
+            </div>
+        )}
     </div>
 );
 

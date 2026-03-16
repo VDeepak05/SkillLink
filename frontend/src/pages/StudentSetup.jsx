@@ -62,7 +62,7 @@ const StudentSetup = () => {
         <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-100 dark:from-slate-900 dark:via-gray-900 dark:to-slate-800 flex items-center justify-center p-6 transition-colors duration-700">
             <div className="max-w-2xl w-full bg-white/80 dark:bg-white/10 backdrop-blur-2xl p-10 rounded-3xl shadow-2xl border border-white/20 dark:border-white/10">
                 <div className="text-center mb-10">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Welcome to SkillLink! 🎉</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Welcome to SkiLink! 🎉</h1>
                     <p className="text-gray-600 dark:text-gray-300">Let's set up your profile. Select the skills you possess so retailers know what you bring to the table.</p>
                 </div>
 

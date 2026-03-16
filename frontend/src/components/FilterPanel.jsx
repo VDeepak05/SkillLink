@@ -64,7 +64,7 @@ const FilterPanel = ({
                     <input
                         type="range"
                         min="0"
-                        max="2000"
+                        max="1000"
                         step="50"
                         value={minSalary}
                         onChange={(e) => setMinSalary(parseInt(e.target.value))}
@@ -72,7 +72,7 @@ const FilterPanel = ({
                     />
                     <div className="flex justify-between text-xs text-gray-400 mt-2 font-medium">
                         <span>₹0</span>
-                        <span>₹2000+</span>
+                        <span>₹1000+</span>
                     </div>
                 </div>
 
