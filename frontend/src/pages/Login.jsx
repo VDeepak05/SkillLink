@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { GraduationCap, Store, Sun, Moon, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-import SkilinkLogo from "../images/SkillLinkLogo.png";
+import JobHuntImage from "../images/JobHunt.svg";
+import SkillLinkLogoProject from "../images/SkillLinkLogoProject.png";
 // import DatePicker from "react-datepicker";
 // import "react-datepicker/dist/react-datepicker.css";
 
@@ -142,7 +143,7 @@ const Login = () => {
     return (
         <div
             className={`min-h-screen transition-all duration-700 
-      flex items-center justify-center px-6 relative overflow-hidden
+      flex items-center justify-center px-6 py-12 relative overflow-y-auto
       ${darkMode
                     ? "dark-animated-gradient"
                     : "bg-gradient-to-br from-emerald-50 via-white to-green-100"
@@ -167,143 +168,128 @@ const Login = () => {
                 )}
             </button>
 
-            <div className="relative z-10 max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-16">
-
-                {/* LEFT SIDE */}
-                <motion.div
-                    initial={{ x: -80, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 1 }}
-                    className="flex-1 flex flex-col justify-center items-center md:items-start"
-                >
-                    <motion.img
-                        src={SkilinkLogo}
-                        alt="SkiLink Logo"
-                        className={`w-72 md:w-[28rem] lg:w-[32rem] mx-auto md:mx-0 object-contain transition-all duration-500 ${darkMode ? 'brightness-0 invert drop-shadow-[0_4px_12px_rgba(255,255,255,0.1)]' : 'drop-shadow-2xl'
-                            }`}
-                        animate={{ y: [0, -12, 0] }}
-                        transition={{ duration: 5, repeat: Infinity }}
-                    />
-                </motion.div>
-
-                {/* RIGHT SIDE - CARD */}
-                <motion.div
-                    initial={{ x: 80, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 1 }}
-                    className="flex-1 max-w-md w-full"
-                >
-                    <motion.div
-                        animate={{ y: [0, -6, 0] }}
-                        transition={{ duration: 6, repeat: Infinity }}
-                        className={`relative backdrop-blur-2xl rounded-3xl p-10 
-                       border shadow-xl space-y-6 transition-all duration-500
-                       ${darkMode
-                                ? "bg-white/10 border-white/20"
-                                : "bg-white/80 border-gray-200"
-                            }`}
-                    >
-                        {/* CONDITIONAL RENDERING: SELECTION OR FORM */}
-                        <AnimatePresence mode="wait">
-                            {!activeRole ? (
+            <div className="relative z-10 max-w-7xl w-full flex flex-col items-center justify-center gap-12">
+                <AnimatePresence mode="wait">
+                    {!activeRole ? (
+                        <motion.div
+                            key="selection"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="w-full flex flex-col items-center gap-16"
+                        >
+                            {/* TOP ROW: Image + Logo side by side */}
+                            <div className="flex flex-col md:flex-row items-center justify-center w-full gap-12 md:gap-24">
+                                {/* Left Graphic */}
                                 <motion.div
-                                    key="selection"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    className="space-y-6"
+                                    initial={{ x: -80, opacity: 0 }}
+                                    animate={{ x: 0, opacity: 1 }}
+                                    transition={{ duration: 1 }}
+                                    className="flex-1 flex justify-end items-center"
                                 >
-                                    <div
-                                        onClick={() => {
-                                            setActiveRole("student");
-                                            setErrorMsg("");
-                                            setFormData({ ...formData, email: "", password: "" });
-                                        }}
-                                        className={`flex items-center gap-4 p-5 
-                                        rounded-2xl hover:scale-105
-                                        transition-all duration-300 cursor-pointer
-                                        ${darkMode
-                                                ? "bg-white/5 border border-white/10 hover:border-emerald-400"
-                                                : "bg-white border border-gray-200 hover:border-emerald-400"
-                                            }`}
-                                    >
-                                        <div
-                                            className={`p-3 rounded-full ${darkMode
-                                                ? "bg-emerald-500/20"
-                                                : "bg-emerald-100"
-                                                }`}
-                                        >
-                                            <GraduationCap
-                                                className={`h-6 w-6 ${darkMode ? "text-emerald-400" : "text-emerald-600"
-                                                    }`}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <h3
-                                                className={`text-lg font-bold transition-colors duration-300 ${darkMode ? "text-white" : "text-gray-900"
-                                                    }`}
-                                            >
-                                                I am a Student
-                                            </h3>
-                                            <p
-                                                className={`text-sm transition-colors duration-300 ${darkMode ? "text-gray-300" : "text-gray-500"
-                                                    }`}
-                                            >
-                                                Find part-time jobs nearby
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div
-                                        onClick={() => {
-                                            setActiveRole("retailer");
-                                            setErrorMsg("");
-                                            setFormData({ ...formData, email: "", password: "" });
-                                        }}
-                                        className={`flex items-center gap-4 p-5 
-                                        rounded-2xl hover:scale-105
-                                        transition-all duration-300 cursor-pointer
-                                        ${darkMode
-                                                ? "bg-white/5 border border-white/10 hover:border-emerald-400"
-                                                : "bg-white border border-gray-200 hover:border-emerald-400"
-                                            }`}
-                                    >
-                                        <div
-                                            className={`p-3 rounded-full ${darkMode
-                                                ? "bg-emerald-500/20"
-                                                : "bg-emerald-100"
-                                                }`}
-                                        >
-                                            <Store
-                                                className={`h-6 w-6 ${darkMode ? "text-emerald-400" : "text-emerald-600"
-                                                    }`}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <h3
-                                                className={`text-lg font-bold transition-colors duration-300 ${darkMode ? "text-white" : "text-gray-900"
-                                                    }`}
-                                            >
-                                                I am a Retailer
-                                            </h3>
-                                            <p
-                                                className={`text-sm transition-colors duration-300 ${darkMode ? "text-gray-300" : "text-gray-500"
-                                                    }`}
-                                            >
-                                                Post jobs and hire students
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <motion.img
+                                        src={JobHuntImage}
+                                        alt="Job Hunt Illustration"
+                                        className={`w-48 md:w-56 lg:w-64 object-contain transition-all duration-500 ${darkMode ? 'drop-shadow-[0_4px_12px_rgba(255,255,255,0.1)]' : 'drop-shadow-2xl'}`}
+                                        animate={{ y: [0, -12, 0] }}
+                                        transition={{ duration: 5, repeat: Infinity }}
+                                    />
                                 </motion.div>
-                            ) : (
+
+                                {/* Center Divider */}
+                                <div className={`hidden md:block w-px h-64 transition-all duration-500 ${darkMode ? 'bg-gradient-to-b from-transparent via-emerald-500/50 to-transparent' : 'bg-gradient-to-b from-transparent via-emerald-600/30 to-transparent'}`}></div>
+
+                                {/* Right Logo */}
                                 <motion.div
-                                    key="form"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
+                                    initial={{ x: 80, opacity: 0 }}
+                                    animate={{ x: 0, opacity: 1 }}
+                                    transition={{ duration: 1 }}
+                                    className="flex-1 flex flex-col items-center md:items-start justify-center"
                                 >
+                                    <img 
+                                        src={SkillLinkLogoProject} 
+                                        alt="SkillLink Logo" 
+                                        className={`h-32 md:h-40 lg:h-48 w-auto object-contain transition-all duration-500 drop-shadow-lg ${darkMode ? 'brightness-0 invert' : ''}`}
+                                    />
+                                    {/* Subtitle text below the logo like in the reference */}
+                                    <p className={`mt-6 text-lg md:text-xl font-medium tracking-wide transition-colors duration-300 ${darkMode ? 'text-gray-300' : 'text-emerald-800'}`}>
+                                        Connect, work, and earn while you learn.
+                                    </p>
+                                </motion.div>
+                            </div>
+
+                            {/* BOTTOM ROW: Horizontal Role Selection Cards */}
+                            <motion.div
+                                initial={{ y: 40, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ duration: 1, delay: 0.2 }}
+                                className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-4xl px-4"
+                            >
+                                <div
+                                    onClick={() => {
+                                        setActiveRole("student");
+                                        setErrorMsg("");
+                                        setFormData({ ...formData, email: "", password: "" });
+                                    }}
+                                    className={`flex-1 flex items-center justify-start gap-6 p-6 md:p-8 w-full
+                                    backdrop-blur-2xl rounded-3xl hover:-translate-y-2
+                                    transition-all duration-300 cursor-pointer border shadow-xl
+                                    ${darkMode
+                                            ? "bg-white/5 border border-white/10 hover:border-emerald-400"
+                                            : "bg-white/80 border border-gray-200 hover:border-emerald-400"
+                                        }`}
+                                >
+                                    <div className={`p-4 rounded-full ${darkMode ? "bg-emerald-500/20" : "bg-emerald-100"}`}>
+                                        <GraduationCap className={`h-8 w-8 ${darkMode ? "text-emerald-400" : "text-emerald-600"}`} />
+                                    </div>
+                                    <div>
+                                        <h3 className={`text-xl md:text-2xl font-bold transition-colors duration-300 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                            I am a Student
+                                        </h3>
+                                        <p className={`text-base md:text-lg transition-colors duration-300 ${darkMode ? "text-gray-300" : "text-gray-500"}`}>
+                                            Find part-time jobs nearby
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div
+                                    onClick={() => {
+                                        setActiveRole("retailer");
+                                        setErrorMsg("");
+                                        setFormData({ ...formData, email: "", password: "" });
+                                    }}
+                                    className={`flex-1 flex items-center justify-start gap-6 p-6 md:p-8 w-full
+                                    backdrop-blur-2xl rounded-3xl hover:-translate-y-2
+                                    transition-all duration-300 cursor-pointer border shadow-xl
+                                    ${darkMode
+                                            ? "bg-white/5 border border-white/10 hover:border-emerald-400"
+                                            : "bg-white/80 border border-gray-200 hover:border-emerald-400"
+                                        }`}
+                                >
+                                    <div className={`p-4 rounded-full ${darkMode ? "bg-emerald-500/20" : "bg-emerald-100"}`}>
+                                        <Store className={`h-8 w-8 ${darkMode ? "text-emerald-400" : "text-emerald-600"}`} />
+                                    </div>
+                                    <div>
+                                        <h3 className={`text-xl md:text-2xl font-bold transition-colors duration-300 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                            I am a Retailer
+                                        </h3>
+                                        <p className={`text-base md:text-lg transition-colors duration-300 ${darkMode ? "text-gray-300" : "text-gray-500"}`}>
+                                            Post jobs and hire students
+                                        </p>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="form"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="w-full flex justify-center items-center max-w-lg"
+                        >
+                            <div className="w-full flex flex-col items-center">
+                                <div className={`relative backdrop-blur-2xl rounded-3xl p-10 border shadow-xl space-y-6 transition-all duration-500 w-full ${darkMode ? "bg-white/10 border-white/20" : "bg-white/80 border-gray-200"}`}>
                                     <button
                                         onClick={() => {
                                             setActiveRole(null);
@@ -382,13 +368,11 @@ const Login = () => {
                                             {isLogin ? "Sign Up" : "Sign In"}
                                         </button>
                                     </p>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                    </motion.div>
-                </motion.div>
-
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

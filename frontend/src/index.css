@@ -175,3 +175,14 @@ body {
 }
 
 /* Light Theme Overrides (if darkMode is false, .react-datepicker won't be inside a dark wrapper normally, but we can set generic styles or assume it adapts if we use context. For now, since Login uses animated dark mostly, this premium dark glass fits the overarching vibe requested). */
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+* {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
