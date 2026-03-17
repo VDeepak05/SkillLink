@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { MapPin, Mail, Store, Save, Lock, Edit2, X, CheckCircle, User } from "lucide-react";
+import { Store, User, Mail, MapPin, Hash, Check, Save, Lock, Edit2, X, AlertCircle, Loader2, CheckCircle2, Sun, Moon, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const RetailerProfilePage = () => {
     const { user, logout, login } = useAuth();
@@ -11,6 +12,7 @@ const RetailerProfilePage = () => {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [editedProfile, setEditedProfile] = useState({});
     const [savingProfile, setSavingProfile] = useState(false);
+    const [profileErrorMsgs, setProfileErrorMsgs] = useState("");
 
     // Password change state
     const [oldPassword, setOldPassword] = useState("");
@@ -18,6 +20,18 @@ const RetailerProfilePage = () => {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [pwdStatus, setPwdStatus] = useState({ msg: "", type: "" });
     const [changingPwd, setChangingPwd] = useState(false);
+
+    // Theme State
+    const [darkMode, setDarkMode] = useState(() => {
+        const saved = localStorage.getItem("theme");
+        return saved !== "light"; // Default to dark
+    });
+
+    const toggleTheme = () => {
+        const newMode = !darkMode;
+        setDarkMode(newMode);
+        localStorage.setItem("theme", newMode ? "dark" : "light");
+    };
 
     useEffect(() => {
         if (!user || user.role !== "retailer") {
@@ -48,6 +62,7 @@ const RetailerProfilePage = () => {
     };
 
     const handleSaveProfile = async () => {
+        setProfileErrorMsgs("");
         setSavingProfile(true);
         try {
             const res = await fetch(`http://localhost:8000/retailer/profile/${user.id}`, {
@@ -68,11 +83,11 @@ const RetailerProfilePage = () => {
                     login({ ...user, name: editedProfile.owner_name });
                 }
             } else {
-                alert("Failed to update profile.");
+                setProfileErrorMsgs("Failed to update profile.");
             }
         } catch (error) {
             console.error("Profile save error:", error);
-            alert("Network error while saving profile.");
+            setProfileErrorMsgs("Network error while saving profile.");
         }
         setSavingProfile(false);
     };
@@ -82,7 +97,7 @@ const RetailerProfilePage = () => {
         setPwdStatus({ msg: "", type: "" });
 
         if (newPassword !== confirmPassword) {
-            setPwdStatus({ msg: "New passwords do not match.", type: "error" });
+            setPwdStatus({ msg: "Passwords do not match.", type: "error" });
             return;
         }
 
@@ -100,7 +115,7 @@ const RetailerProfilePage = () => {
             });
 
             if (res.ok) {
-                setPwdStatus({ msg: "Password changed successfully! Please log in again.", type: "success" });
+                setPwdStatus({ msg: "Success! Logging you out for security.", type: "success" });
                 setOldPassword("");
                 setNewPassword("");
                 setConfirmPassword("");
@@ -108,10 +123,10 @@ const RetailerProfilePage = () => {
                 setTimeout(() => {
                     logout();
                     navigate("/");
-                }, 2500);
+                }, 2000);
             } else {
                 const data = await res.json();
-                setPwdStatus({ msg: data.detail || "Failed to change password.", type: "error" });
+                setPwdStatus({ msg: data.detail || "Update failed.", type: "error" });
             }
         } catch (error) {
             console.error("Password change error:", error);
@@ -120,207 +135,226 @@ const RetailerProfilePage = () => {
         setChangingPwd(false);
     };
 
-    if (!profile) return <div className="text-center py-20 font-bold text-gray-500">Loading profile...</div>;
-
-    const isDarkMode = document.documentElement.classList.contains("dark") || localStorage.getItem("theme") === "dark";
+    if (!profile) return (
+        <div className="min-h-screen dark-animated-gradient flex items-center justify-center">
+            <Loader2 className="h-12 w-12 text-emerald-500 animate-spin" />
+        </div>
+    );
 
     return (
-        <div className={`min-h-screen pt-10 pb-20 ${isDarkMode ? "bg-slate-900 text-white" : "bg-gray-50 text-gray-900"} transition-colors duration-500`}>
-            <div className="max-w-4xl mx-auto px-6">
+        <div className={`min-h-screen transition-all duration-700 ${darkMode ? "dark-animated-gradient" : "bg-gradient-to-br from-emerald-50 via-white to-green-100"} py-12 px-6`}>
+            <div className="max-w-4xl mx-auto">
 
-                <h1 className="text-3xl font-bold mb-8 flex items-center gap-3">
-                    <Store className="text-olive-600" size={32} />
-                    Retailer Management Profile
-                </h1>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-between items-end mb-12"
+                >
+                    <div>
+                        <h1 className={`text-4xl font-extrabold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Business Profile</h1>
+                        <p className={`${darkMode ? "text-emerald-400" : "text-emerald-600"} font-medium font-outfit italic tracking-wide`}>Manage your retailer credentials</p>
+                    </div>
+                </motion.div>
 
-                {/* Account / Business Information Card */}
-                <div className={`rounded-3xl p-8 mb-8 border shadow-sm ${isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100"}`}>
-                    <div className="flex justify-between items-center mb-6 border-b pb-4">
-                        <h2 className="text-xl font-bold flex items-center gap-2">
-                            Business Details
-                            <span className="bg-emerald-100 text-emerald-700 text-sm py-1 px-3 ml-2 rounded-full flex items-center gap-1">
-                                <CheckCircle size={14} /> Verified Account
-                            </span>
-                        </h2>
-                        {!isEditingProfile ? (
-                            <button
-                                onClick={() => {
-                                    setEditedProfile(profile);
-                                    setIsEditingProfile(true);
-                                }}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${isDarkMode ? "bg-slate-700 hover:bg-slate-600 text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}`}
-                            >
-                                <Edit2 size={16} /> Edit Profile
-                            </button>
-                        ) : (
-                            <div className="flex gap-2">
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                    {/* Left Column - Business Info & Security */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="lg:col-span-2 space-y-8"
+                    >
+                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white/80 border-gray-200"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl relative overflow-hidden group transition-all duration-500`}>
+                            <div className="absolute top-0 right-0 p-6">
+                                {!isEditingProfile ? (
+                                    <button
+                                        onClick={() => {
+                                            setEditedProfile(profile);
+                                            setIsEditingProfile(true);
+                                        }}
+                                        className="bg-white/5 hover:bg-emerald-500/20 p-3 rounded-2xl transition-all text-emerald-400 border border-white/5 hover:border-emerald-500/30"
+                                    >
+                                        <Edit2 size={20} />
+                                    </button>
+                                ) : (
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setIsEditingProfile(false);
+                                                setProfileErrorMsgs("");
+                                            }}
+                                            className="bg-white/5 hover:bg-red-500/20 p-3 rounded-2xl transition-all text-red-400 border border-white/5 hover:border-red-500/30"
+                                        >
+                                            <X size={20} />
+                                        </button>
+                                        <button
+                                            onClick={handleSaveProfile}
+                                            disabled={savingProfile}
+                                            className="bg-emerald-500 hover:bg-emerald-600 p-3 rounded-2xl transition-all text-white shadow-lg shadow-emerald-500/20"
+                                        >
+                                            {savingProfile ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <h2 className={`text-xl font-bold mb-8 flex items-center gap-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                <span className={`p-2 rounded-lg ${darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-600"}`}><Store size={20} /></span>
+                                Business Details
+                            </h2>
+
+                            {profileErrorMsgs && (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold flex items-center gap-3">
+                                    <AlertCircle size={18} />
+                                    {profileErrorMsgs}
+                                </motion.div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+                                <ProfileField icon={<User />} label="Owner Name" name="owner_name" value={isEditingProfile ? editedProfile.owner_name : profile.owner_name} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
+                                <ProfileField icon={<Store />} label="Shop Name" name="shop_name" value={isEditingProfile ? editedProfile.shop_name : profile.shop_name} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
+                                <ProfileField icon={<Mail />} label="Email" name="email" value={profile.email} editing={false} darkMode={darkMode} />
+                                <ProfileField icon={<Store />} label="Category" name="shop_type" value={isEditingProfile ? editedProfile.shop_type : profile.shop_type} editing={isEditingProfile} onChange={handleProfileChange} type="select" darkMode={darkMode} />
+                                <ProfileField icon={<Hash />} label="Shop ID" name="shop_id" value={profile.shop_id} editing={false} darkMode={darkMode} />
+                                <ProfileField icon={<MapPin />} label="Location" name="location" value={isEditingProfile ? editedProfile.location : profile.location} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
+                            </div>
+                        </div>
+
+                        {/* Password Change Card (Moved Below Profile) */}
+                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white/80 border-gray-200"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500`}>
+                            <h2 className={`text-xl font-bold mb-6 flex items-center gap-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                <span className={`p-2 rounded-lg ${darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-500"}`}><Lock size={20} /></span>
+                                Security
+                            </h2>
+
+                            {pwdStatus.msg && (
+                                <div className={`p-4 rounded-2xl mb-6 text-xs font-bold border ${pwdStatus.type === 'error' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
+                                    {pwdStatus.msg}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleChangePassword} className="space-y-5">
+                                <div className="space-y-2">
+                                    <label className={`text-xs font-bold uppercase tracking-widest ml-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Current Password</label>
+                                    <input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} required className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className={`text-xs font-bold uppercase tracking-widest ml-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>New Password</label>
+                                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all font-outfit ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className={`text-xs font-bold uppercase tracking-widest ml-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Confirm New</label>
+                                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`} />
+                                </div>
                                 <button
-                                    onClick={() => setIsEditingProfile(false)}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${isDarkMode ? "bg-slate-700 hover:bg-slate-600 text-gray-300" : "bg-gray-100 hover:bg-gray-200 text-gray-600"}`}
+                                    type="submit"
+                                    disabled={changingPwd}
+                                    className={`w-full border rounded-2xl px-5 py-4 font-bold transition-all shadow-xl flex items-center justify-center gap-2 group ${darkMode ? "bg-white/5 hover:bg-white/10 border-white/10 text-white" : "bg-white hover:bg-gray-50 border-gray-200 text-gray-900"}`}
                                 >
-                                    <X size={16} /> Cancel
+                                    {changingPwd ? <Loader2 className="animate-spin" size={20} /> : "Update Credentials"}
                                 </button>
+                            </form>
+                        </div>
+                    </motion.div>
+
+                    {/* Right Column - Account Status & Settings */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="space-y-8"
+                    >
+                        {/* Display Settings Card */}
+                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white/80 border-gray-200"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500 mb-8`}>
+                            <h2 className={`text-xl font-bold mb-6 flex items-center gap-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                <span className={`p-2 rounded-lg ${darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-500"}`}>
+                                    <Settings size={20} />
+                                </span>
+                                Display Settings
+                            </h2>
+
+                            <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${darkMode ? "bg-white/5 border-white/5" : "bg-gray-50/50 border-gray-100"}`}>
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2.5 rounded-xl transition-all ${darkMode ? "bg-yellow-500/20 text-yellow-400" : "bg-indigo-500/10 text-indigo-600"}`}>
+                                        {darkMode ? <Moon size={20} /> : <Sun size={20} />}
+                                    </div>
+                                    <div>
+                                        <p className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>Appearance</p>
+                                        <p className="text-xs text-gray-500 font-medium">{darkMode ? "Dark Mode" : "Light Mode"}</p>
+                                    </div>
+                                </div>
                                 <button
-                                    onClick={handleSaveProfile}
-                                    disabled={savingProfile}
-                                    className="bg-olive-600 hover:bg-olive-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-md"
+                                    onClick={toggleTheme}
+                                    className={`relative w-14 h-7 rounded-full transition-all duration-300 outline-none
+                                        ${darkMode ? "bg-emerald-500" : "bg-gray-300"}`}
                                 >
-                                    {savingProfile ? "Saving..." : <><Save size={16} /> Save</>}
+                                    <div className={`absolute top-1 left-1 bg-white w-5 h-5 rounded-full transition-all duration-500 shadow-lg flex items-center justify-center
+                                        ${darkMode ? "translate-x-7 rotate-0" : "translate-x-0 rotate-180"}`}
+                                    >
+                                        {darkMode ? <Moon size={12} className="text-emerald-500" /> : <Sun size={12} className="text-gray-400" />}
+                                    </div>
                                 </button>
                             </div>
-                        )}
-                    </div>
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <InfoRow
-                            icon={<User size={18} />}
-                            label="Owner Name"
-                            name="owner_name"
-                            value={isEditingProfile ? editedProfile.owner_name : profile.owner_name}
-                            dark={isDarkMode}
-                            isEditing={isEditingProfile}
-                            onChange={handleProfileChange}
-                        />
-                        <InfoRow
-                            icon={<Store size={18} />}
-                            label="Shop Name"
-                            name="shop_name"
-                            value={isEditingProfile ? editedProfile.shop_name : profile.shop_name}
-                            dark={isDarkMode}
-                            isEditing={isEditingProfile}
-                            onChange={handleProfileChange}
-                        />
-                        <InfoRow
-                            icon={<Mail size={18} />}
-                            label="Email Address"
-                            name="email"
-                            value={profile.email}
-                            dark={isDarkMode}
-                            isEditing={false} // Usually don't allow email edits
-                        />
-                        <InfoRow
-                            icon={<Store size={18} />}
-                            label="Shop Category"
-                            name="shop_type"
-                            value={isEditingProfile ? editedProfile.shop_type : profile.shop_type}
-                            dark={isDarkMode}
-                            isEditing={isEditingProfile}
-                            onChange={handleProfileChange}
-                            isSelect={true}
-                        />
-                        <InfoRow
-                            icon={<Store size={18} />}
-                            label="Shop ID (Registration)"
-                            name="shop_id"
-                            value={profile.shop_id}
-                            dark={isDarkMode}
-                            isEditing={false} // Usually don't allow shop ID edits
-                        />
-                        <InfoRow
-                            icon={<MapPin size={18} />}
-                            label="Location Area"
-                            name="location"
-                            value={isEditingProfile ? editedProfile.location : profile.location}
-                            dark={isDarkMode}
-                            isEditing={isEditingProfile}
-                            onChange={handleProfileChange}
-                        />
-                    </div>
+                        {/* Status Card */}
+                        <div className={`${darkMode ? "bg-emerald-500/10 border-emerald-500/20" : "bg-emerald-50 border-emerald-100"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500`}>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className={`p-3 rounded-2xl ${darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-white shadow-sm text-emerald-600"}`}>
+                                    <Store size={24} />
+                                </div>
+                                <div>
+                                    <p className={`text-xs font-bold uppercase tracking-widest ${darkMode ? "text-emerald-500/60" : "text-emerald-600/60"}`}>Account Status</p>
+                                    <p className={`text-lg font-bold ${darkMode ? "text-white" : "text-emerald-700"}`}>Verified Retailer</p>
+                                </div>
+                            </div>
+                            <p className={`text-sm leading-relaxed ${darkMode ? "text-gray-400" : "text-gray-600 font-medium"}`}>
+                                Your business profile is active. You can now post job listings and recruit potential candidates.
+                            </p>
+                        </div>
+                    </motion.div>
                 </div>
-
-                {/* Change Password Section */}
-                <div className={`rounded-3xl p-8 border shadow-sm ${isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100"}`}>
-                    <h2 className="text-xl font-bold mb-6 border-b pb-4 flex items-center gap-2">
-                        <Lock size={20} className="text-gray-400" />
-                        Change Password
-                    </h2>
-
-                    {pwdStatus.msg && (
-                        <div className={`p-4 rounded-xl mb-6 font-bold text-sm ${pwdStatus.type === 'error' ? 'bg-red-500/10 text-red-500 border border-red-500/30' : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'}`}>
-                            {pwdStatus.msg}
-                        </div>
-                    )}
-
-                    <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
-                        <div>
-                            <label className={`block text-sm font-bold mb-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Current Password</label>
-                            <input
-                                type="password"
-                                value={oldPassword}
-                                onChange={(e) => setOldPassword(e.target.value)}
-                                required
-                                className={`w-full px-4 py-3 rounded-xl border focus:outline-none transition-colors ${isDarkMode ? "bg-slate-900 border-slate-600 focus:border-olive-500" : "bg-gray-50 border-gray-200 focus:border-olive-500"}`}
-                            />
-                        </div>
-                        <div>
-                            <label className={`block text-sm font-bold mb-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>New Password</label>
-                            <input
-                                type="password"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                required
-                                className={`w-full px-4 py-3 rounded-xl border focus:outline-none transition-colors ${isDarkMode ? "bg-slate-900 border-slate-600 focus:border-olive-500" : "bg-gray-50 border-gray-200 focus:border-olive-500"}`}
-                            />
-                        </div>
-                        <div>
-                            <label className={`block text-sm font-bold mb-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Confirm New Password</label>
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
-                                className={`w-full px-4 py-3 rounded-xl border focus:outline-none transition-colors ${isDarkMode ? "bg-slate-900 border-slate-600 focus:border-olive-500" : "bg-gray-50 border-gray-200 focus:border-olive-500"}`}
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={changingPwd}
-                            className="w-full mt-4 bg-gray-900 hover:bg-black text-white px-5 py-3 rounded-xl font-bold transition-all shadow-md dark:bg-slate-700 dark:hover:bg-slate-600"
-                        >
-                            {changingPwd ? "Updating..." : "Update Password"}
-                        </button>
-                    </form>
-                </div>
-
             </div>
         </div>
     );
 };
 
-const InfoRow = ({ icon, label, name, value, dark, isEditing, onChange, type = "text", isSelect }) => (
-    <div className="flex items-start gap-4">
-        <div className={`p-3 rounded-xl ${dark ? "bg-slate-700 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}>
-            {icon}
-        </div>
-        <div className="flex-1 w-full">
-            <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${dark ? "text-gray-400" : "text-gray-500"}`}>{label}</p>
-            {isEditing ? (
-                isSelect ? (
-                    <select
-                        name={name}
-                        value={value || ""}
-                        onChange={onChange}
-                        className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-olive-500 transition-colors ${dark ? "bg-slate-900 border-slate-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
-                    >
-                        <option value="Supermarket">Supermarket</option>
-                        <option value="Bakery">Bakery</option>
-                        <option value="Clothing Store">Clothing Store</option>
-                        <option value="Cafe">Cafe</option>
-                        <option value="Other">Other</option>
-                    </select>
-                ) : (
-                    <input
-                        type={type}
-                        name={name}
-                        value={value || ''}
-                        onChange={onChange}
-                        className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-olive-500 transition-colors ${dark ? "bg-slate-900 border-slate-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
-                    />
-                )
+const ProfileField = ({ icon, label, name, value, editing, onChange, type = "text", darkMode = true }) => (
+    <div className="space-y-3 group/field">
+        <label className={`flex items-center gap-2 text-xs font-bold uppercase tracking-widest ml-1 transform transition-transform group-focus-within/field:translate-x-1 ${darkMode ? "text-emerald-500/60" : "text-emerald-600/70"}`}>
+            <span className={darkMode ? "text-emerald-500" : "text-emerald-600"}>{React.cloneElement(icon, { size: 14 })}</span>
+            {label}
+        </label>
+        {editing ? (
+            type === "select" ? (
+                <select
+                    name={name}
+                    value={value || ""}
+                    onChange={onChange}
+                    className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all text-sm font-medium ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+                >
+                    <option value="Supermarket" className="text-gray-900">Supermarket</option>
+                    <option value="Bakery" className="text-gray-900">Bakery</option>
+                    <option value="Clothing Store" className="text-gray-900">Clothing Store</option>
+                    <option value="Cafe" className="text-gray-900">Cafe</option>
+                    <option value="Other" className="text-gray-900">Other</option>
+                </select>
             ) : (
-                <p className={`font-semibold text-lg ${dark ? "text-white" : "text-gray-900"}`}>{value || "Not provided"}</p>
-            )}
-        </div>
+                <input
+                    type={type}
+                    name={name}
+                    value={value || ''}
+                    onChange={onChange}
+                    className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all text-sm font-medium ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+                />
+            )
+        ) : (
+            <div className="px-1">
+                <p className={`text-lg font-bold tracking-tight ${darkMode ? "text-white" : "text-gray-900"}`}>{value || "—"}</p>
+            </div>
+        )}
     </div>
 );
 
