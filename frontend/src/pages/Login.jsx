@@ -179,13 +179,13 @@ const Login = () => {
                             className="w-full flex flex-col items-center gap-16"
                         >
                             {/* TOP ROW: Image + Logo side by side */}
-                            <div className="flex flex-col md:flex-row items-center justify-center w-full gap-12 md:gap-24">
+                            <div className="flex flex-col md:flex-row items-center justify-center w-full md:gap-0 gap-12">
                                 {/* Left Graphic */}
                                 <motion.div
                                     initial={{ x: -80, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
                                     transition={{ duration: 1 }}
-                                    className="flex-1 flex justify-end items-center"
+                                    className="flex-1 flex justify-end items-center md:pr-8"
                                 >
                                     <motion.img
                                         src={JobHuntImage}
@@ -204,7 +204,7 @@ const Login = () => {
                                     initial={{ x: 80, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
                                     transition={{ duration: 1 }}
-                                    className="flex-1 flex flex-col items-center md:items-start justify-center"
+                                    className="flex-1 flex flex-col items-center md:items-start justify-center md:pl-8"
                                 >
                                     <img 
                                         src={SkillLinkLogoProject} 

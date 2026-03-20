@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -6,9 +6,33 @@ import SkillLinkLogo from '../images/SkillLinkLogoProject.png';
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+
+    // Fetch unread notifications
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            if (!user || (!user.id && !user.user_id)) return;
+            const userId = user.id || user.user_id; // Added fallback just in case
+            try {
+                // Fixed the endpoint route here: it's /messages/ not /inbox/
+                const res = await fetch(`http://localhost:8000/messages/${userId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    // Fixed the parsing, data is the array itself
+                    const unread = Array.isArray(data) ? data.filter(msg => !msg.read).length : 0;
+                    setUnreadCount(unread);
+                }
+            } catch (error) {
+                console.error("Failed to fetch notifications count:", error);
+            }
+        };
+
+        fetchNotifications();
+        // Option: we could set an interval here if we wanted real-time polling
+    }, [user, location.pathname]); // Re-fetch when navigating to/from inbox
 
     // Fallback for demo if user not set via login page (e.g. direct url access)
     const isRetailerPath = location.pathname.includes('retailer');
@@ -65,10 +89,16 @@ const Navbar = () => {
                                 <div className="flex items-center gap-4">
                                     <button
                                         onClick={() => navigate('/inbox')}
-                                        className="p-2 rounded-full hover:bg-gray-50 text-gray-500 hover:text-emerald-500 transition-colors"
+                                        className="relative p-2 rounded-full hover:bg-gray-50 text-gray-500 hover:text-emerald-500 transition-colors"
                                         title="Inbox"
                                     >
                                         <Mail className="h-5 w-5" />
+                                        {/* Notification Badge */}
+                                        {unreadCount > 0 && (
+                                            <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-500 rounded-full animate-pulse-slow">
+                                                {unreadCount > 99 ? '99+' : unreadCount}
+                                            </span>
+                                        )}
                                     </button>
                                     <button
                                         onClick={() => navigate(user.role === 'retailer' ? '/retailer/profile' : '/student/profile')}
@@ -122,12 +152,28 @@ const Navbar = () => {
                         </Link>
                     ))}
                     {user ? (
-                        <button
-                            onClick={handleLogout}
-                            className="w-full text-left block px-4 py-3 rounded-xl text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                            Logout
-                        </button>
+                        <>
+                            <button
+                                onClick={() => {
+                                    setIsOpen(false);
+                                    navigate('/inbox');
+                                }}
+                                className="w-full text-left flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                            >
+                                <span>Inbox</span>
+                                {unreadCount > 0 && (
+                                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {unreadCount} new
+                                    </span>
+                                )}
+                            </button>
+                            <button
+                                onClick={handleLogout}
+                                className="w-full text-left block px-4 py-3 rounded-xl text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                                Logout
+                            </button>
+                        </>
                     ) : (
                         <Link
                             to="/"
