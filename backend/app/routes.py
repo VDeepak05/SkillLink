@@ -15,14 +15,18 @@ from backend.db.mongo_client import logs_col, jobs_col, users_col, applications_
 router = APIRouter()
 
 # Password hashing setup
-from passlib.context import CryptContext
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str):
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str):
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
 
 def calculate_age(dob_str: str) -> int:
     try:
@@ -318,11 +322,27 @@ def update_retailer_password(user_id: str, payload: StudentPasswordUpdate):
 @router.post("/jobs/apply")
 def apply_for_job(application: JobApplicationCreate):
     try:
-        # Prevent double applications
+        # Find the job first to get its normalized IDs
+        job = jobs_col.find_one({"job_id": application.job_id})
+        if not job and len(application.job_id) == 24:
+            try:
+                job = jobs_col.find_one({"_id": ObjectId(application.job_id)})
+            except:
+                pass
+        
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        # Now check for existing application using BOTH possible identity fields
+        # (the job_id string and the MongoDB _id)
+        job_id_str = job.get("job_id")
+        job_obj_id = str(job["_id"])
+
         existing = applications_col.find_one({
-            "job_id": application.job_id,
-            "student_id": application.retailer_id # retailer_id actually holds student_id in the post request because of an alias inside the schema
+            "student_id": application.retailer_id,
+            "job_id": {"$in": [job_id_str, job_obj_id]}
         })
+        
         if existing:
             raise HTTPException(status_code=400, detail="Already applied for this job")
             
@@ -331,14 +351,11 @@ def apply_for_job(application: JobApplicationCreate):
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
 
-        # Get job to ensure it exists and get retailer_id
-        job = jobs_col.find_one({"job_id": application.job_id})
-        if not job:
-            raise HTTPException(status_code=404, detail="Job not found")
-
+        retailer_id = job.get("retailer_id", "admin_sys")
+        
         app_doc = {
             "job_id": application.job_id,
-            "actual_retailer_id": job["retailer_id"],
+            "actual_retailer_id": retailer_id,
             "student_id": application.retailer_id, # Using retailer_id as student_id
             "student_name": student.get("name", "Unknown"),
             "student_college": student.get("college", ""),
@@ -351,7 +368,7 @@ def apply_for_job(application: JobApplicationCreate):
         
         # Notify Retailer about new application
         messages_col.insert_one({
-            "recipient_id": job["retailer_id"],
+            "recipient_id": retailer_id,
             "job_id": application.job_id,
             "title": "New Applicant",
             "message": f"{student.get('name', 'A student')} applied for {job.get('job_title', 'a job')}.",
@@ -360,6 +377,18 @@ def apply_for_job(application: JobApplicationCreate):
         })
         
         return {"status": "success", "message": "Application submitted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/jobs/{job_id}/status/{user_id}")
+def check_application_status(job_id: str, user_id: str):
+    try:
+        # Check if an application exists for this student and job
+        application = applications_col.find_one({
+            "job_id": job_id,
+            "student_id": user_id
+        })
+        return {"applied": application is not None}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -373,6 +402,12 @@ def get_retailer_applications(user_id: str):
             
             # Optionally enrich with job title
             job = jobs_col.find_one({"job_id": a["job_id"]})
+            if not job and len(a["job_id"]) == 24:
+                try:
+                    job = jobs_col.find_one({"_id": ObjectId(a["job_id"])})
+                except:
+                    pass
+            
             if job:
                 a["job_title"] = job.get("job_title", "Unknown Job")
                 
@@ -580,5 +615,119 @@ def mark_message_read(message_id: str):
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Message not found")
         return {"status": "success", "message": "Message marked as read"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/student/applications/{user_id}")
+def get_student_applications(user_id: str):
+    try:
+        # Fetch all applications for the student
+        raw_apps = list(applications_col.find({"student_id": user_id}).sort("applied_at", -1))
+        
+        seen_job_internal_ids = set()
+        apps = []
+
+        for a in raw_apps:
+            a["id"] = str(a["_id"])
+            del a["_id"]
+            
+            # Enrich with job details
+            job = jobs_col.find_one({"job_id": a["job_id"]})
+            if not job and len(a["job_id"]) == 24:
+                try:
+                    job = jobs_col.find_one({"_id": ObjectId(a["job_id"])})
+                except:
+                    pass
+
+            # Determine a truly unique key for this job to prevent duplicates in the UI
+            # We use the MongoDB string ID as the ultimate source of truth
+            job_unique_key = None
+            if job:
+                job_unique_key = str(job["_id"])
+            else:
+                # If job is deleted, fallback to the job_id string from the application
+                job_unique_key = a.get("job_id")
+
+            if job_unique_key in seen_job_internal_ids:
+                continue
+            seen_job_internal_ids.add(job_unique_key)
+
+            if job:
+                a["job_title"] = job.get("job_title", "Unknown Job")
+                a["shop_name"] = job.get("shop_name", "Unknown Shop")
+                a["shop_type"] = job.get("shop_type", "")
+                a["salary"] = job.get("salary_per_day", "")
+                a["location"] = job.get("area", "")
+                a["shift"] = job.get("shift_type", "")
+            else:
+                # Fallback if job was deleted or missing after both lookups
+                a["job_title"] = "Job No Longer Available"
+                a["shop_name"] = "Deleted"
+                a["shop_type"] = "N/A"
+                a["salary"] = "0"
+                a["location"] = "Location Not Available"
+                a["shift"] = ""
+            
+            apps.append(a)
+            
+        return {"status": "success", "applications": apps}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/student/wishlist/toggle")
+def toggle_wishlist(payload: dict):
+    try:
+        student_id = payload.get("student_id")
+        job_id = payload.get("job_id")
+        
+        if not student_id or not job_id:
+            raise HTTPException(status_code=400, detail="Missing student_id or job_id")
+            
+        user = users_col.find_one({"_id": ObjectId(student_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="Student not found")
+            
+        wishlist = user.get("wishlist", [])
+        if job_id in wishlist:
+            # Remove from wishlist
+            users_col.update_one(
+                {"_id": ObjectId(student_id)},
+                {"$pull": {"wishlist": job_id}}
+            )
+            return {"status": "success", "action": "removed", "message": "Job removed from wishlist"}
+        else:
+            # Add to wishlist
+            users_col.update_one(
+                {"_id": ObjectId(student_id)},
+                {"$addToSet": {"wishlist": job_id}}
+            )
+            return {"status": "success", "action": "added", "message": "Job added to wishlist"}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/student/wishlist/{user_id}")
+def get_student_wishlist(user_id: str):
+    try:
+        user = users_col.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="Student not found")
+            
+        wishlist_ids = user.get("wishlist", [])
+        
+        wishlist_jobs = []
+        for j_id in wishlist_ids:
+            job = jobs_col.find_one({"job_id": j_id})
+            if not job:
+                if len(j_id) == 24:
+                    job = jobs_col.find_one({"_id": ObjectId(j_id)})
+            
+            if job:
+                job["id"] = str(job["_id"])
+                job["job_id"] = job.get("job_id", str(job["_id"]))
+                del job["_id"]
+                wishlist_jobs.append(job)
+                
+        return {"wishlist": wishlist_jobs}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
