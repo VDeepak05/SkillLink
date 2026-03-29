@@ -67,7 +67,7 @@ const AdminLogin = () => {
                 </div>
 
                 <h1 className={`text-2xl font-bold text-center mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
-                    Admin Portal
+                    SkiLink Admin Portal
                 </h1>
                 <p className={`text-center text-sm mb-8 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                     Restricted access area for SkiLink management.
@@ -111,7 +111,7 @@ const AdminLogin = () => {
                         {loading ? "Authenticating..." : (
                             <>
                                 <Lock className="h-4 w-4 mr-2" />
-                                Secure Login
+                                Login
                             </>
                         )}
                     </button>

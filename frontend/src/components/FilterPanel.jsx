@@ -18,7 +18,7 @@ const FilterPanel = ({
     };
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-300 overflow-hidden sticky top-24">
             {/* Header - Clickable on Mobile */}
             <div
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
@@ -80,7 +80,7 @@ const FilterPanel = ({
                 <div>
                     <h4 className="text-sm font-bold text-gray-900 mb-3">Preferred Shift</h4>
                     <div className="space-y-3">
-                        {['Morning', 'Evening', 'Night', 'Flexible'].map((shift) => (
+                        {['Morning', 'Evening', 'Night', 'Flexible', 'Holiday'].map((shift) => (
                             <label key={shift} className="flex items-center gap-3 cursor-pointer group">
                                 <div className="relative flex items-center">
                                     <input
@@ -105,10 +105,16 @@ const FilterPanel = ({
                         className="w-full text-sm border-gray-300 rounded-xl focus:ring-olive-500 focus:border-olive-500 p-3 border outline-none bg-gray-50/50 hover:bg-white transition-colors"
                     >
                         <option value="All Types">All Types</option>
-                        <option value="Supermarket">Supermarket</option>
                         <option value="Bakery">Bakery</option>
-                        <option value="Clothing Store">Clothing Store</option>
                         <option value="Cafe">Cafe</option>
+                        <option value="Coaching Center">Coaching Center</option>
+                        <option value="Corporate Office">Corporate Office</option>
+                        <option value="Digital Agency">Digital Agency</option>
+                        <option value="Event Management Company">Event Management Company</option>
+                        <option value="Hotel">Hotel</option>
+                        <option value="Logistics Company">Logistics Company</option>
+                        <option value="Restaurant">Restaurant</option>
+                        <option value="Supermarket">Supermarket</option>
                     </select>
                 </div>
             </div>

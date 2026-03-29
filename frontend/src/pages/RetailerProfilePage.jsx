@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Store, User, Mail, MapPin, Hash, Check, Save, Lock, Edit2, X, AlertCircle, Loader2, CheckCircle2, Sun, Moon, Settings } from "lucide-react";
+import { Store, User, Mail, MapPin, Hash, Phone, Check, Save, Lock, Edit2, X, AlertCircle, Loader2, CheckCircle2, Sun, Moon, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -72,7 +72,8 @@ const RetailerProfilePage = () => {
                     owner_name: editedProfile.owner_name,
                     shop_name: editedProfile.shop_name,
                     shop_type: editedProfile.shop_type,
-                    location: editedProfile.location
+                    location: editedProfile.location,
+                    phone_no: editedProfile.phone_no
                 })
             });
             if (res.ok) {
@@ -219,6 +220,7 @@ const RetailerProfilePage = () => {
                                 <ProfileField icon={<Store />} label="Category" name="shop_type" value={isEditingProfile ? editedProfile.shop_type : profile.shop_type} editing={isEditingProfile} onChange={handleProfileChange} type="select" darkMode={darkMode} />
                                 <ProfileField icon={<Hash />} label="Shop ID" name="shop_id" value={profile.shop_id} editing={false} darkMode={darkMode} />
                                 <ProfileField icon={<MapPin />} label="Location" name="location" value={isEditingProfile ? editedProfile.location : profile.location} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
+                                <ProfileField icon={<Phone />} label="Phone Number" name="phone_no" value={isEditingProfile ? editedProfile.phone_no : profile.phone_no} editing={isEditingProfile} onChange={handleProfileChange} type="tel" darkMode={darkMode} />
                             </div>
                         </div>
 
