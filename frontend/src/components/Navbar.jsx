@@ -11,30 +11,27 @@ const Navbar = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
 
+    const fetchNotifications = async () => {
+        if (!user || (!user.id && !user.user_id)) return;
+        const userId = user.id || user.user_id;
+        try {
+            const res = await fetch(`http://localhost:8000/messages/${userId}`);
+            if (res.ok) {
+                const data = await res.json();
+                const unread = Array.isArray(data) ? data.filter(msg => !msg.read).length : 0;
+                setUnreadCount(unread);
+            }
+        } catch (error) {
+            console.error("Failed to fetch notifications count:", error);
+        }
+    };
+
     // Fetch unread notifications
     useEffect(() => {
-        const fetchNotifications = async () => {
-            if (!user || (!user.id && !user.user_id)) return;
-            const userId = user.id || user.user_id; // Added fallback just in case
-            try {
-                // Fixed the endpoint route here: it's /messages/ not /inbox/
-                const res = await fetch(`http://localhost:8000/messages/${userId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    // Fixed the parsing, data is the array itself
-                    const unread = Array.isArray(data) ? data.filter(msg => !msg.read).length : 0;
-                    setUnreadCount(unread);
-                }
-            } catch (error) {
-                console.error("Failed to fetch notifications count:", error);
-            }
-        };
-
         fetchNotifications();
-        // Option: we could set an interval here if we wanted real-time polling
-    }, [user, location.pathname]); // Re-fetch when navigating to/from inbox
+    }, [user, location.pathname]);
 
-    // Also re-fetch when other pages signal that inbox was updated (e.g. auto-dismiss on applicant view)
+    // Also re-fetch when other pages signal that inbox was updated
     useEffect(() => {
         const handleRefresh = () => fetchNotifications();
         window.addEventListener('inbox-refresh', handleRefresh);

@@ -43,21 +43,48 @@ const Login = () => {
         setFormData({ ...formData, dob: formattedDate });
     };
 
-    // Load saved theme
+    // Auto-Redirect if already logged in + Role Recovery
     useEffect(() => {
         const savedTheme = localStorage.getItem("theme");
-
         if (savedTheme === "light") {
             setDarkMode(false);
         } else {
             setDarkMode(true);
         }
-    }, []);
+
+        // 1. Recover activeRole if no role is selected yet (per tab)
+        const savedRole = sessionStorage.getItem("skilllink_activeRole");
+        if (savedRole && !activeRole) {
+            setActiveRole(savedRole);
+        }
+
+        // 2. Auto-redirect if user already has a session in this tab
+        const savedUser = sessionStorage.getItem('skilllink_authUser');
+        if (savedUser) {
+            try {
+                const userObj = JSON.parse(savedUser);
+                if (userObj.role === 'student') {
+                    navigate('/jobs');
+                } else if (userObj.role === 'retailer') {
+                    navigate('/retailer');
+                }
+            } catch (e) {
+                console.error("Auth recovery failed:", e);
+            }
+        }
+    }, [navigate]);
 
     const toggleTheme = () => {
         const newMode = !darkMode;
         setDarkMode(newMode);
         localStorage.setItem("theme", newMode ? "dark" : "light");
+    };
+
+    const handleRoleSelect = (role) => {
+        setActiveRole(role);
+        sessionStorage.setItem("skilllink_activeRole", role);
+        setErrorMsg("");
+        setFormData({ ...formData, email: "", password: "" });
     };
 
     const handleAuth = async (e) => {
@@ -236,11 +263,7 @@ const Login = () => {
                                 className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-4xl px-4"
                             >
                                 <div
-                                    onClick={() => {
-                                        setActiveRole("student");
-                                        setErrorMsg("");
-                                        setFormData({ ...formData, email: "", password: "" });
-                                    }}
+                                    onClick={() => handleRoleSelect("student")}
                                     className={`flex-1 flex items-center justify-start gap-6 p-6 md:p-8 w-full
                                     backdrop-blur-2xl rounded-3xl hover:-translate-y-2
                                     transition-all duration-300 cursor-pointer border shadow-xl
@@ -263,11 +286,7 @@ const Login = () => {
                                 </div>
 
                                 <div
-                                    onClick={() => {
-                                        setActiveRole("retailer");
-                                        setErrorMsg("");
-                                        setFormData({ ...formData, email: "", password: "" });
-                                    }}
+                                    onClick={() => handleRoleSelect("retailer")}
                                     className={`flex-1 flex items-center justify-start gap-6 p-6 md:p-8 w-full
                                     backdrop-blur-2xl rounded-3xl hover:-translate-y-2
                                     transition-all duration-300 cursor-pointer border shadow-xl
@@ -303,6 +322,7 @@ const Login = () => {
                                     <button
                                         onClick={() => {
                                             setActiveRole(null);
+                                            localStorage.removeItem("skilllink_activeRole");
                                             setIsLogin(true);
                                             setErrorMsg("");
                                         }}

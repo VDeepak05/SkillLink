@@ -4,7 +4,7 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(() => {
-        const savedUser = localStorage.getItem('skilllink_authUser');
+        const savedUser = sessionStorage.getItem('skilllink_authUser');
         return savedUser ? JSON.parse(savedUser) : null;
     });
 
@@ -18,12 +18,12 @@ export const AuthProvider = ({ children }) => {
             finalUser = userData;
         }
         setUser(finalUser);
-        localStorage.setItem('skilllink_authUser', JSON.stringify(finalUser));
+        sessionStorage.setItem('skilllink_authUser', JSON.stringify(finalUser));
     };
 
     const logout = () => {
         setUser(null);
-        localStorage.removeItem('skilllink_authUser');
+        sessionStorage.removeItem('skilllink_authUser');
     };
 
     return (

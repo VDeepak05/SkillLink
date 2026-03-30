@@ -441,13 +441,13 @@ async def simulate_dataset_bot_decision(application_id: str, student_id: str, jo
         {"$set": {"status": decision}}
     )
     
-    title = "Application Accepted!" if decision == "accepted" else "Application Update"
+    title = "Application Accepted!" if decision == "accepted" else "Application Rejected"
     
     if decision == "accepted":
         shop_email = f"manager@{job.get('shop_name', 'shop').replace(' ', '').replace('+', '').lower()}.com"
         msg = f"Congratulations! Your application for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} has been accepted.\n\nContact the Manager at 9876543210 or {shop_email} to proceed!"
     else:
-        msg = f"Sorry, all openings for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} have been filled. You were not selected this time."
+        msg = f"Sorry, you were not selected for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} this time."
            
     messages_col.insert_one({
         "recipient_id": student_id,
@@ -602,6 +602,16 @@ def update_application_status(application_id: str, status: dict):
             raise HTTPException(status_code=400, detail="Invalid status")
             
         # 1. Update the application status
+        if new_status == "accepted":
+            # Check if job is already full first!
+            app = applications_col.find_one({"_id": ObjectId(application_id)})
+            if not app:
+                raise HTTPException(status_code=404, detail="Application not found")
+            
+            job = jobs_col.find_one({"$or": [{"job_id": app.get("job_id")}, {"_id": ObjectId(app.get("job_id")) if len(app.get("job_id", "")) == 24 else None}]})
+            if job and job.get("status") == "closed":
+                 raise HTTPException(status_code=400, detail="This job is already filled and closed.")
+
         result = applications_col.update_one(
             {"_id": ObjectId(application_id)},
             {"$set": {"status": new_status}}
@@ -613,13 +623,19 @@ def update_application_status(application_id: str, status: dict):
         if new_status == "accepted":
             # get the updated application to find the job_id
             updated_app = applications_col.find_one({"_id": ObjectId(application_id)})
-            job_id = updated_app.get("job_id")
+            job_id_from_app = updated_app.get("job_id")
             
-            # get job details
-            job = jobs_col.find_one({"job_id": job_id})
+            # get job details (checking both possibilities for ID)
+            job = jobs_col.find_one({"$or": [
+                {"job_id": job_id_from_app},
+                {"_id": ObjectId(job_id_from_app) if len(job_id_from_app or "") == 24 else ObjectId()}
+            ]})
+            
             now_iso = datetime.now(timezone.utc).isoformat()
             
             if job:
+                job_id_canonical = job.get("job_id", str(job["_id"]))
+                
                 # Get the true retailer identity
                 retailer = users_col.find_one({"_id": ObjectId(updated_app.get("actual_retailer_id")), "role": "retailer"})
                 contact_info = ""
@@ -632,28 +648,43 @@ def update_application_status(application_id: str, status: dict):
                 # notify the accepted student
                 messages_col.insert_one({
                     "recipient_id": updated_app.get("student_id"),
-                    "job_id": job_id,
+                    "job_id": job_id_canonical,
                     "title": "Application Accepted!",
                     "message": f"Congratulations! Your application for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} has been accepted.{contact_info}",
                     "read": False,
                     "created_at": now_iso
                 })
                 
-                openings = job.get("openings")
+                # Support both modern 'openings' and legacy 'number_of_openings' fields
+                openings = job.get("openings", job.get("number_of_openings"))
+                
                 # Treat None or 0 openings as unlimited — never auto-close
                 if openings is None or openings <= 0:
                     openings = float('inf')
                 
-                # count how many accepted apps exist for this job
-                accepted_count = applications_col.count_documents({"job_id": job_id, "status": "accepted"})
+                # count how many accepted apps exist for this job (checking both UUID and ObjectId strings)
+                accepted_count = applications_col.count_documents({
+                    "job_id": {"$in": [job.get("job_id"), str(job["_id"])]}, 
+                    "status": "accepted"
+                })
                 
                 # If we have reached or exceeded the required openings
                 if accepted_count >= openings:
-                    # a) Close the job
-                    jobs_col.update_one({"job_id": job_id}, {"$set": {"status": "closed"}})
+                    # a) Close the job in DB
+                    jobs_col.update_one({"_id": job["_id"]}, {"$set": {"status": "closed"}})
                     
-                    # b) Reject all pending applications
-                    pending_apps = list(applications_col.find({"job_id": job_id, "status": "pending"}))
+                    # b) Sync with Recommender memory
+                    try:
+                        from backend.app.recommender import mark_job_as_closed_in_recommender
+                        mark_job_as_closed_in_recommender(job_id_canonical)
+                    except Exception as e:
+                        print(f"Warning: Recommender sync failed: {e}")
+                    
+                    # c) Reject all remaining pending applications (across both ID formats)
+                    pending_apps = list(applications_col.find({
+                        "job_id": {"$in": [job.get("job_id"), str(job["_id"])]}, 
+                        "status": "pending"
+                    }))
                     
                     if pending_apps:
                         pending_ids = [app["_id"] for app in pending_apps]
@@ -662,14 +693,14 @@ def update_application_status(application_id: str, status: dict):
                             {"$set": {"status": "rejected"}}
                         )
                         
-                        # c) Send Inbox notification to rejected students
+                        # d) Send Inbox notification to rejected students
                         messages_to_insert = []
                         for app in pending_apps:
                             messages_to_insert.append({
                                 "recipient_id": app["student_id"],
-                                "job_id": job_id,
-                                "title": "Application Update",
-                                "message": f"Sorry, all openings for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} have been filled. You were not selected this time.",
+                                "job_id": job_id_canonical,
+                                "title": "Application Rejected",
+                                "message": f"Sorry, you were not selected for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} this time.",
                                 "read": False,
                                 "created_at": now_iso
                             })

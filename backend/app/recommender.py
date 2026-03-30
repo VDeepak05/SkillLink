@@ -184,7 +184,13 @@ def recommend_jobs(profile, evaluation_mode=False, weights=None, train_logs=None
     # We remove the rigid hard-filter on student profile shift so the Machine 
     # Learning TF-IDF algorithm can naturally boost the preferred shift via text 
     # cosine-similarity without outright hiding 100% of other shift jobs!
-    candidate_indices = list(range(len(jobs)))
+    # -----------------------------------------------------
+    # STATUS FILTER
+    # -----------------------------------------------------
+    candidate_indices = [
+        idx for idx, job in enumerate(jobs) 
+        if job.get("status") != "closed"
+    ]
 
     # -----------------------------------------------------
     # GEO FILTER (disabled in evaluation)

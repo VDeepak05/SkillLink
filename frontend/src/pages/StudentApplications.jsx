@@ -48,14 +48,19 @@ const StudentApplications = () => {
         } else {
             setFilteredApps(applications.filter(app => app.status === activeTab));
         }
-
-        // Auto-dismiss relevant inbox notifications when viewing that tab directly
-        if (user && activeTab === 'accepted') {
-            fetch(`http://localhost:8000/messages/bulk-read/${user.id}?title_contains=Accepted`, {
-                method: 'PUT'
-            }).catch(() => {}); // silent — don't block UI
-        }
     }, [activeTab, applications, user]);
+
+    // Auto-dismiss relevant inbox notifications when viewing an application's details
+    useEffect(() => {
+        if (user && selectedApp && (selectedApp.status === 'accepted' || selectedApp.status === 'rejected')) {
+            fetch(`http://localhost:8000/messages/bulk-read/${user.id}?title_contains=Application`, {
+                method: 'PUT'
+            }).then(() => {
+                // Signal the Navbar to re-fetch its unread count
+                window.dispatchEvent(new CustomEvent('inbox-refresh'));
+            }).catch(() => {});
+        }
+    }, [selectedApp, user]);
 
     const getStatusStyle = (status) => {
         switch (status) {
@@ -182,8 +187,8 @@ const StudentApplications = () => {
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: index * 0.1 }}
-                                    onClick={() => { if (app.status === 'accepted') setSelectedApp(app); }}
-                                    className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white border-gray-200 shadow-xl"} ${app.status === 'accepted' ? 'cursor-pointer hover:border-emerald-400' : 'hover:border-emerald-500/30'} backdrop-blur-md border rounded-3xl p-6 group transition-all duration-300`}
+                                    onClick={() => { if (app.status !== 'pending') setSelectedApp(app); }}
+                                    className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white border-gray-200 shadow-xl"} ${app.status !== 'pending' ? 'cursor-pointer hover:border-emerald-400' : 'hover:border-emerald-500/30'} backdrop-blur-md border rounded-3xl p-6 group transition-all duration-300`}
                                 >
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                         <div className="flex-1">
@@ -265,44 +270,64 @@ const StudentApplications = () => {
                             </button>
                             
                             <div className="flex flex-col items-center text-center space-y-4 pt-4">
-                                <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-2 shadow-inner ${darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-600"}`}>
-                                    <CheckCircle2 size={40} />
+                                <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-2 shadow-inner ${
+                                    selectedApp.status === 'accepted' 
+                                        ? (darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-600")
+                                        : (darkMode ? "bg-red-500/20 text-red-400" : "bg-red-100 text-red-600")
+                                }`}>
+                                    {selectedApp.status === 'accepted' ? <CheckCircle2 size={40} /> : <XCircle size={40} />}
                                 </div>
                                 
                                 <div>
-                                    <h3 className={`text-2xl font-black mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Congratulations!</h3>
+                                    <h3 className={`text-2xl font-black mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                        {selectedApp.status === 'accepted' ? 'Congratulations!' : 'Application Rejected'}
+                                    </h3>
                                     <p className={`text-base font-medium leading-relaxed ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                        Your application for <span className={`${darkMode ? "text-emerald-400" : "text-emerald-600"} font-bold`}>{selectedApp.job_title}</span> at <span className="font-bold">{selectedApp.shop_name}</span> has been accepted.
+                                        {selectedApp.status === 'accepted' ? (
+                                            <>Your application for <span className={`${darkMode ? "text-emerald-400" : "text-emerald-600"} font-bold`}>{selectedApp.job_title}</span> at <span className="font-bold">{selectedApp.shop_name}</span> has been accepted.</>
+                                        ) : (
+                                            <>Sorry, you were not selected for the <span className={`${darkMode ? "text-red-400" : "text-red-600"} font-bold`}>{selectedApp.job_title}</span> role at <span className="font-bold">{selectedApp.shop_name}</span> this time.</>
+                                        )}
                                     </p>
                                 </div>
                                 
-                                <div className={`w-full p-5 mt-2 rounded-2xl text-left border ${darkMode ? "bg-emerald-900/10 border-emerald-500/20" : "bg-emerald-50 border-emerald-200"}`}>
-                                    <p className={`text-xs font-bold uppercase tracking-widest mb-4 ${darkMode ? "text-emerald-500" : "text-emerald-700"}`}>Contact Info</p>
-                                    <div className="space-y-3">
-                                        <div className={`text-sm flex items-center gap-4 font-medium ${darkMode ? "text-gray-300" : "text-gray-800"}`}>
-                                            <div className={`p-2 rounded-lg ${darkMode ? "bg-white/5 text-gray-400" : "bg-white text-emerald-600 shadow-sm"}`}>
-                                                <User size={16} />
+                                {selectedApp.status === 'accepted' ? (
+                                    <>
+                                        <div className={`w-full p-5 mt-2 rounded-2xl text-left border ${darkMode ? "bg-emerald-900/10 border-emerald-500/20" : "bg-emerald-50 border-emerald-200"}`}>
+                                            <p className={`text-xs font-bold uppercase tracking-widest mb-4 ${darkMode ? "text-emerald-500" : "text-emerald-700"}`}>Contact Info</p>
+                                            <div className="space-y-3">
+                                                <div className={`text-sm flex items-center gap-4 font-medium ${darkMode ? "text-gray-300" : "text-gray-800"}`}>
+                                                    <div className={`p-2 rounded-lg ${darkMode ? "bg-white/5 text-gray-400" : "bg-white text-emerald-600 shadow-sm"}`}>
+                                                        <User size={16} />
+                                                    </div>
+                                                    {selectedApp.retailer_name}
+                                                </div>
+                                                <div className={`text-sm flex items-center gap-4 font-medium ${darkMode ? "text-gray-300" : "text-gray-800"}`}>
+                                                    <div className={`p-2 rounded-lg ${darkMode ? "bg-white/5 text-gray-400" : "bg-white text-emerald-600 shadow-sm"}`}>
+                                                        <Phone size={16} />
+                                                    </div>
+                                                    {selectedApp.retailer_phone}
+                                                </div>
+                                                <div className={`text-sm flex items-center gap-4 font-medium ${darkMode ? "text-gray-300" : "text-gray-800"}`}>
+                                                    <div className={`p-2 rounded-lg ${darkMode ? "bg-white/5 text-gray-400" : "bg-white text-emerald-600 shadow-sm"}`}>
+                                                        <Mail size={16} />
+                                                    </div>
+                                                    {selectedApp.retailer_email}
+                                                </div>
                                             </div>
-                                            {selectedApp.retailer_name}
                                         </div>
-                                        <div className={`text-sm flex items-center gap-4 font-medium ${darkMode ? "text-gray-300" : "text-gray-800"}`}>
-                                            <div className={`p-2 rounded-lg ${darkMode ? "bg-white/5 text-gray-400" : "bg-white text-emerald-600 shadow-sm"}`}>
-                                                <Phone size={16} />
-                                            </div>
-                                            {selectedApp.retailer_phone}
-                                        </div>
-                                        <div className={`text-sm flex items-center gap-4 font-medium ${darkMode ? "text-gray-300" : "text-gray-800"}`}>
-                                            <div className={`p-2 rounded-lg ${darkMode ? "bg-white/5 text-gray-400" : "bg-white text-emerald-600 shadow-sm"}`}>
-                                                <Mail size={16} />
-                                            </div>
-                                            {selectedApp.retailer_email}
-                                        </div>
+                                        
+                                        <p className={`text-sm pt-4 font-medium italic ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                            The owner will contact you soon, or you can reach out directly!
+                                        </p>
+                                    </>
+                                ) : (
+                                    <div className={`w-full p-6 bg-red-500/5 border border-red-500/10 rounded-2xl`}>
+                                        <p className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                            Keep applying! There are many other roles available that match your skills.
+                                        </p>
                                     </div>
-                                </div>
-                                
-                                <p className={`text-sm pt-4 font-medium italic ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                                    The owner will contact you soon, or you can reach out directly!
-                                </p>
+                                )}
                             </div>
                         </motion.div>
                     </div>
