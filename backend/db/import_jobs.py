@@ -45,7 +45,7 @@ df = df.fillna("")
 records = df.to_dict(orient="records")
 
 # ---------- Add Realistic created_at ----------
-today = datetime.utcnow()
+today = datetime.now(timezone.utc)
 
 for job in records:
     # Distribute jobs over last 60 days

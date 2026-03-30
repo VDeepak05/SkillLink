@@ -99,7 +99,7 @@ const AdminDashboard = () => {
             <header className={`sticky top-0 z-50 px-6 py-4 flex items-center justify-between border-b ${darkMode ? "bg-gray-900/80 border-gray-800 backdrop-blur-xl" : "bg-white/80 border-gray-200 backdrop-blur-xl"}`}>
                 <div className="flex items-center gap-3">
                     <Shield className="h-6 w-6 text-red-500" />
-                    <h1 className="text-xl font-bold tracking-tight">Admin System Central</h1>
+                    <h1 className="text-xl font-bold tracking-tight">SkiLink Admin</h1>
                 </div>
                 <div className="flex items-center gap-6">
                     <span className={`text-sm font-medium px-3 py-1 rounded-full ${darkMode ? "bg-gray-800" : "bg-gray-100"}`}>

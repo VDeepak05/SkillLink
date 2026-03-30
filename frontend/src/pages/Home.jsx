@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import FilterPanel from "../components/FilterPanel";
 import JobCard from "../components/JobCard";
 import { Search } from "lucide-react";
@@ -10,6 +10,10 @@ const Home = () => {
     const [darkMode, setDarkMode] = useState(true);
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [totalMatched, setTotalMatched] = useState(0);
 
     // Filter States
     const [maxDistance, setMaxDistance] = useState(20);
@@ -21,52 +25,117 @@ const Home = () => {
     const [savedJobIds, setSavedJobIds] = useState(new Set());
     const { user } = useAuth();
 
-    useEffect(() => {
-        const fetchHomeData = async () => {
-            try {
-                // Fetch Jobs
-                const jobsRes = await fetch('http://localhost:8000/jobs');
-                const jobsData = await jobsRes.json();
-                const mappedJobs = jobsData.map(job => ({
-                    id: job.id,
-                    job_id: job.job_id,
-                    title: job.job_title,
-                    shopName: job.shop_name || "Retail Shop",
-                    shopType: job.shop_type,
-                    location: job.area || "Palakkad",
-                    distance: (Math.random() * 5 + 1).toFixed(1),
-                    shift: job.shift_type,
-                    days: job.is_seasonal ? 'Seasonal' : 'Mon-Fri',
-                    salary: job.salary_per_day
-                }));
-                setJobs(mappedJobs);
+    const fetchJobs = async (pageNum = 0, reset = false) => {
+        if (pageNum === 0) setLoading(true);
+        else setLoadingMore(true);
 
-                // Fetch Student Data if logged in
-                if (user && user.role === 'student') {
-                    // Fetch Applications
-                    const appsRes = await fetch(`http://localhost:8000/student/applications/${user.id}`);
+        try {
+            const skip = pageNum * 20;
+            const shiftStr = selectedShifts.join(",");
+            const queryParams = new URLSearchParams({
+                skip: skip,
+                limit: 20,
+                search: searchTerm,
+                distance: maxDistance,
+                shifts: shiftStr,
+                shop_type: shopType,
+                min_salary: minSalary
+            }).toString();
+
+            const endpoint = user && user.role === 'student'
+                ? `http://localhost:8000/recommend/${user.id}?${queryParams}`
+                : `http://localhost:8000/jobs?${queryParams}`;
+
+            const res = await fetch(endpoint, { cache: 'no-store' });
+            const data = await res.json();
+            
+            const jobList = data.jobs || [];
+            if (pageNum === 0) setTotalMatched(data.total_count || 0);
+
+            if (jobList.length < 20) setHasMore(false);
+            else setHasMore(true);
+
+            const mappedJobs = jobList.map(job => ({
+                id: job.id,
+                job_id: job.job_id,
+                title: job.job_title,
+                shopName: job.shop_name || job.shop_type,
+                shopType: job.shop_type,
+                location: job.area || "Palakkad",
+                distance: job.distance !== undefined ? job.distance.toFixed(1) : "N/A",
+                shift: job.shift_type,
+                days: job.is_seasonal ? 'Seasonal' : 'Mon-Fri',
+                salary: job.salary_per_day
+            }));
+
+            if (reset) {
+                setJobs(mappedJobs);
+            } else {
+                setJobs(prev => {
+                    const existingIds = new Set(prev.map(j => j.id));
+                    const newJobs = mappedJobs.filter(j => !existingIds.has(j.id));
+                    return [...prev, ...newJobs];
+                });
+            }
+        } catch (err) {
+            console.error("Home jobs fetch error:", err);
+        } finally {
+            if (pageNum === 0) setLoading(false);
+            else setLoadingMore(false);
+        }
+    };
+
+    const handleLoadMore = () => {
+        if (!loadingMore && hasMore) {
+            const nextPage = page + 1;
+            setPage(nextPage);
+            fetchJobs(nextPage, false);
+        }
+    };
+
+    const observer = useRef();
+    const lastJobElementRef = useCallback(node => {
+        if (loadingMore || loading) return;
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasMore) {
+                const nextPage = page + 1;
+                setPage(nextPage);
+                fetchJobs(nextPage, false);
+            }
+        });
+        if (node) observer.current.observe(node);
+    }, [loadingMore, loading, hasMore, page]);
+
+    // Initialize Jobs and apply Debounced filters
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setPage(0);
+            fetchJobs(0, true);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [user, searchTerm, maxDistance, selectedShifts, shopType, minSalary]);
+
+    // Fetch user-specific metadata once
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (user && user.role === 'student') {
+                try {
+                    const appsRes = await fetch(`http://localhost:8000/student/applications/${user.id}`, { cache: 'no-store' });
                     if (appsRes.ok) {
                         const appsData = await appsRes.json();
-                        const idSet = new Set(appsData.applications.map(a => a.job_id));
-                        setAppliedJobIds(idSet);
+                        setAppliedJobIds(new Set(appsData.applications.map(a => a.job_id)));
                     }
 
-                    // Fetch Wishlist
-                    const wishlistRes = await fetch(`http://localhost:8000/student/wishlist/${user.id}`);
+                    const wishlistRes = await fetch(`http://localhost:8000/student/wishlist/${user.id}`, { cache: 'no-store' });
                     if (wishlistRes.ok) {
                         const wishlistData = await wishlistRes.json();
-                        const savedSet = new Set(wishlistData.wishlist.map(j => j.job_id || j.id));
-                        setSavedJobIds(savedSet);
+                        setSavedJobIds(new Set(wishlistData.wishlist.map(j => j.job_id || j.id)));
                     }
-                }
-            } catch (err) {
-                console.error("Home data fetch error:", err);
-            } finally {
-                setLoading(false);
+                } catch (err) {}
             }
         };
-
-        fetchHomeData();
+        fetchUserData();
     }, [user]);
 
     // Sync with Login toggle
@@ -74,28 +143,6 @@ const Home = () => {
         const savedTheme = localStorage.getItem("theme");
         setDarkMode(savedTheme !== "light");
     }, []);
-
-    const filteredJobs = useMemo(() => {
-        return jobs.filter((job) => {
-            const matchesSearch = `${job.title} ${job.location} ${job.shopName}`
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase());
-
-            const matchesDistance = parseFloat(job.distance) <= maxDistance;
-
-            // Shift is typically lowercase in DB, uppercase in UI array
-            const matchesShift = selectedShifts.length === 0 ||
-                selectedShifts.some(s => s.toLowerCase() === (job.shift || '').toLowerCase());
-
-            const matchesType = shopType === 'All Types' || job.shopType === shopType;
-
-            // Ensure salaries are compared as numbers
-            const jobSalary = parseFloat(job.salary) || 0;
-            const matchesSalary = jobSalary >= minSalary;
-
-            return matchesSearch && matchesDistance && matchesShift && matchesType && matchesSalary;
-        });
-    }, [searchTerm, jobs, maxDistance, selectedShifts, shopType, minSalary]);
 
     return (
         <div
@@ -142,7 +189,7 @@ const Home = () => {
                          backdrop-blur-xl border transition-all duration-300
                          ${darkMode
                                     ? "bg-white/10 border-white/20 text-white placeholder-gray-400"
-                                    : "bg-white/80 border-gray-200 text-gray-900"
+                                    : "bg-white border-gray-300 text-gray-900"
                                 }`}
                         />
 
@@ -160,7 +207,7 @@ const Home = () => {
                     <aside
                         className={`w-full lg:w-72 rounded-3xl p-6 backdrop-blur-2xl border transition-all duration-500 ${darkMode
                             ? "bg-white/10 border-white/20"
-                            : "bg-white/80 border-gray-200"
+                            : "bg-white border-gray-300"
                             }`}
                     >
                         <FilterPanel
@@ -183,30 +230,73 @@ const Home = () => {
                             </h2>
 
                             <span
-                                className={`px-4 py-1.5 rounded-full text-sm font-medium ${darkMode
-                                    ? "bg-emerald-500/20 text-emerald-400"
-                                    : "bg-emerald-100 text-emerald-700"
+                                className={`px-4 py-1.5 rounded-full border text-sm font-medium ${darkMode
+                                    ? "bg-emerald-500/20 text-emerald-400 border-transparent"
+                                    : "bg-emerald-50 text-emerald-800 border-emerald-300"
                                     }`}
                             >
-                                {filteredJobs.length} jobs found
+                                {totalMatched} jobs found
                             </span>
                         </div>
 
                         {loading ? (
-                            <div className={`text-center py-10 ${darkMode ? "text-white" : "text-gray-900"}`}>
-                                Loading jobs...
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-10">
+                                {[...Array(6)].map((_, i) => (
+                                    <div key={i} className={`h-[240px] rounded-3xl animate-pulse ${darkMode ? 'bg-white/5 border border-white/10' : 'bg-gray-200 border border-gray-100'}`}>
+                                        <div className="p-6 space-y-4">
+                                            <div className="flex justify-between">
+                                                <div className={`h-8 w-48 rounded-lg ${darkMode ? 'bg-white/10' : 'bg-gray-300'}`} />
+                                                <div className={`h-8 w-8 rounded-full ${darkMode ? 'bg-white/10' : 'bg-gray-300'}`} />
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <div className={`h-6 w-24 rounded-full ${darkMode ? 'bg-white/10' : 'bg-gray-300'}`} />
+                                                <div className={`h-6 w-24 rounded-full ${darkMode ? 'bg-white/10' : 'bg-gray-300'}`} />
+                                            </div>
+                                            <div className="space-y-2 pt-2">
+                                                <div className={`h-4 w-full rounded ${darkMode ? 'bg-white/5' : 'bg-gray-300'}`} />
+                                                <div className={`h-4 w-2/3 rounded ${darkMode ? 'bg-white/5' : 'bg-gray-300'}`} />
+                                            </div>
+                                            <div className="flex justify-between items-center pt-4">
+                                                <div className={`h-10 w-32 rounded-xl ${darkMode ? 'bg-white/10' : 'bg-gray-300'}`} />
+                                                <div className={`h-8 w-24 rounded-lg ${darkMode ? 'bg-white/10' : 'bg-gray-300'}`} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {filteredJobs.map((job) => (
-                                    <JobCard
-                                        key={job.id}
-                                        job={job}
-                                        darkMode={darkMode}
-                                        isApplied={appliedJobIds.has(job.job_id)}
-                                        isSaved={savedJobIds.has(job.job_id)}
-                                    />
-                                ))}
+                            <div className="pb-10 min-h-[600px]">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {jobs.map((job) => (
+                                        <JobCard
+                                            key={job.id}
+                                            job={job}
+                                            darkMode={darkMode}
+                                            isApplied={appliedJobIds.has(job.job_id)}
+                                            isSaved={savedJobIds.has(job.job_id)}
+                                        />
+                                    ))}
+                                </div>
+                                {hasMore && jobs.length > 0 && !loadingMore && (
+                                    <div ref={lastJobElementRef} className="h-10 w-full mt-4" />
+                                )}
+                                {loadingMore && (
+                                    <div className={`mt-10 text-center font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                                        <div className="inline-flex h-6 w-6 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+                                        <span className="ml-3">Loading more jobs...</span>
+                                    </div>
+                                )}
+                                {!hasMore && jobs.length > 0 && (
+                                    <div className={`mt-10 text-center text-sm font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                        You've reached the end of the list.
+                                    </div>
+                                )}
+                                {jobs.length === 0 && !loading && (
+                                    <div className={`text-center py-20 rounded-3xl border border-dashed ${darkMode ? 'border-white/10 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+                                        <p className="text-xl font-bold">No jobs found matching your criteria</p>
+                                        <p className="mt-2">Try adjusting your filters or search terms.</p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </main>

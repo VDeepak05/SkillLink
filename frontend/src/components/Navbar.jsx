@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import SkillLinkLogo from '../images/SkillLinkLogoProject.png';
+import SkillLinkLogo from '../images/SkiLinkLogoNew.png';
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -34,6 +34,13 @@ const Navbar = () => {
         // Option: we could set an interval here if we wanted real-time polling
     }, [user, location.pathname]); // Re-fetch when navigating to/from inbox
 
+    // Also re-fetch when other pages signal that inbox was updated (e.g. auto-dismiss on applicant view)
+    useEffect(() => {
+        const handleRefresh = () => fetchNotifications();
+        window.addEventListener('inbox-refresh', handleRefresh);
+        return () => window.removeEventListener('inbox-refresh', handleRefresh);
+    }, [user]);
+
     // Fallback for demo if user not set via login page (e.g. direct url access)
     const isRetailerPath = location.pathname.includes('retailer');
 
@@ -44,6 +51,7 @@ const Navbar = () => {
         ? [
             { name: 'Dashboard', path: '/retailer' },
             { name: 'Post Job', path: '/retailer/post-job' },
+            { name: 'Jobs', path: '/jobs' },
         ]
         : [
             { name: 'Find Jobs', path: '/jobs' },
@@ -61,7 +69,7 @@ const Navbar = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-20">
                     <div className="flex items-center">
-                        <Link to={isRetailer ? "/retailer" : "/jobs"} className="flex items-center gap-2">
+                        <Link to={isRetailer ? "/retailer" : "/jobs"} className="flex items-center gap-1">
                             <img src={SkillLinkLogo} alt="SkiLink Logo" className="h-10 object-contain drop-shadow-md" />
                             <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 text-transparent bg-clip-text">
                                 SkiLink

@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
+from pydantic import BaseModel, Field, field_validator
+from typing import List, Optional, Any
 
 class StudentProfile(BaseModel):
     student_id: str
@@ -24,6 +24,7 @@ class JobCreate(BaseModel):
     openings: int = 1
     is_seasonal: bool = False
     description: str = ""
+    skills: list[str] = []
 
 # Authentication Schemas
 class StudentSignUp(BaseModel):
@@ -41,6 +42,7 @@ class RetailerSignUp(BaseModel):
     shop_id: str = Field(..., example="REG456")
     shop_type: str = Field(..., example="Bakery")
     location: str = Field(..., example="Indiranagar")
+    phone_no: str = Field(..., example="1234567890")
     email: str
     password: str = Field(..., min_length=6)
     verified: bool = Field(False, description="Whether the admin has verified this shop")
@@ -48,6 +50,7 @@ class RetailerSignUp(BaseModel):
 class UserSignIn(BaseModel):
     email: str
     password: str
+    role: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: str
@@ -77,6 +80,22 @@ class JobResponse(BaseModel):
     is_seasonal: Optional[bool] = None
     
     score: Optional[float] = None # made optional to work for normal query
+    applicant_count: Optional[int] = 0
+    distance: Optional[float] = None
+    skills: List[str] = []
+
+    @field_validator('skills', mode='before')
+    @classmethod
+    def coerce_skills(cls, v: Any) -> List[str]:
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str) and v.strip():
+            return [s.strip() for s in v.split(',') if s.strip()]
+        return []
+
+class PaginatedJobResponse(BaseModel):
+    total_count: int
+    jobs: List[JobResponse]
 
 class JobApplicationCreate(BaseModel):
     job_id: str
@@ -102,6 +121,7 @@ class ShopProfileUpdate(BaseModel):
     shop_name: Optional[str] = None
     shop_type: Optional[str] = None
     location: Optional[str] = None
+    phone_no: Optional[str] = None
 
 class StudentProfileUpdate(BaseModel):
     skills: Optional[List[str]] = None

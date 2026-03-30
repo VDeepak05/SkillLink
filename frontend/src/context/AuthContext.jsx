@@ -3,23 +3,27 @@ import React, { createContext, useContext, useState } from 'react';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null); // { id: '...', name: '...', role: 'student' | 'retailer', email: '...' }
+    const [user, setUser] = useState(() => {
+        const savedUser = localStorage.getItem('skilllink_authUser');
+        return savedUser ? JSON.parse(savedUser) : null;
+    });
 
     const login = (userData) => {
-        // If userData comes as a string (legacy call), mock it
+        let finalUser;
         if (typeof userData === 'string') {
-            if (userData === 'student') {
-                setUser({ name: 'Alex Johnson', role: 'student' });
-            } else {
-                setUser({ name: 'Fresh Mart Manager', role: 'retailer' });
-            }
+            finalUser = userData === 'student' 
+                ? { name: 'Alex Johnson', role: 'student' } 
+                : { name: 'Fresh Mart Manager', role: 'retailer' };
         } else {
-            setUser(userData);
+            finalUser = userData;
         }
+        setUser(finalUser);
+        localStorage.setItem('skilllink_authUser', JSON.stringify(finalUser));
     };
 
     const logout = () => {
         setUser(null);
+        localStorage.removeItem('skilllink_authUser');
     };
 
     return (

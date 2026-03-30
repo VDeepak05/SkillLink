@@ -8,10 +8,11 @@ const RetailerDashboard = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [darkMode, setDarkMode] = useState(true);
-    const [activeTab, setActiveTab] = useState("overview"); // overview, applications, profile
+    const [activeTab, setActiveTab] = useState("overview"); // overview, profile
 
     const [jobs, setJobs] = useState([]);
     const [applications, setApplications] = useState([]);
+    const [expandedJobId, setExpandedJobId] = useState(null);
     const [profile, setProfile] = useState({ description: "", website: "", instagram: "", facebook: "", logo_url: "" });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -29,6 +30,19 @@ const RetailerDashboard = () => {
         }
         fetchDashboardData();
     }, [user, navigate]);
+
+    // When a job is expanded and applicants are visible, dismiss all "New Applicant" inbox messages
+    // and fire a custom event so the Navbar badge re-polls immediately (no route change needed)
+    useEffect(() => {
+        if (expandedJobId && user) {
+            fetch(`http://localhost:8000/messages/bulk-read/${user.id}?title_contains=New Applicant`, {
+                method: 'PUT'
+            }).then(() => {
+                // Signal the Navbar to re-fetch its unread count
+                window.dispatchEvent(new CustomEvent('inbox-refresh'));
+            }).catch(() => {});
+        }
+    }, [expandedJobId, user]);
 
     const fetchDashboardData = async () => {
         setLoading(true);
@@ -157,13 +171,6 @@ const RetailerDashboard = () => {
                         darkMode={darkMode}
                     />
                     <TabButton
-                        active={activeTab === 'applications'}
-                        onClick={() => setActiveTab('applications')}
-                        icon={<Users size={18} />}
-                        label={`Applicants ${pendingCount > 0 ? `(${pendingCount} New)` : ''}`}
-                        darkMode={darkMode}
-                    />
-                    <TabButton
                         active={activeTab === 'profile'}
                         onClick={() => setActiveTab('profile')}
                         icon={<Store size={18} />}
@@ -199,63 +206,94 @@ const RetailerDashboard = () => {
                                     {jobs.length === 0 ? (
                                         <div className="p-10 text-center opacity-70 italic text-gray-500">You haven't posted any jobs yet.</div>
                                     ) : (
-                                        jobs.map((job) => (
-                                            <div key={job.id} className={`p-6 border-b last:border-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${darkMode ? "border-white/10 hover:bg-white/5" : "border-gray-100 hover:bg-gray-50"}`}>
-                                                <div>
-                                                    <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-gray-900"}`}>{job.job_title}</h3>
-                                                    <p className={`text-sm mt-1 flex items-center gap-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                                                        <MapPin size={14} /> {job.area || "Location"} • ₹{job.salary_per_day}/day
-                                                    </p>
-                                                    <div className="flex gap-2 mt-3">
-                                                        <span className="px-3 py-1 bg-emerald-500/20 text-emerald-500 text-xs font-bold rounded-full border border-emerald-500/30">Active</span>
-                                                        <span className={`px-3 py-1 text-xs font-bold rounded-full border ${darkMode ? "bg-white/5 border-white/10 text-gray-300" : "bg-gray-100 border-gray-200 text-gray-600"}`}>{job.shift_type}</span>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => navigate(`/jobs/${job.job_id}`)} className="px-5 py-2.5 rounded-xl font-bold bg-gray-500/10 hover:bg-gray-500/20 text-emerald-600 dark:text-emerald-400 transition-colors flex items-center gap-2">
-                                                    <ExternalLink size={16} /> View Job
-                                                </button>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                                        jobs.map((job) => {
+                                            const jobApps = applications.filter(a => a.job_id === job.job_id);
+                                            const jobPendingCount = jobApps.filter(a => a.status === 'pending').length;
+                                            const isExpanded = expandedJobId === job.job_id;
 
-                        {activeTab === 'applications' && (
-                            <div className="space-y-6">
-                                {applications.length === 0 ? (
-                                    <div className={`rounded-3xl p-10 text-center border ${darkMode ? "bg-white/5 border-white/10 text-gray-400" : "bg-white border-gray-200 text-gray-500"}`}>
-                                        <Users className="mx-auto h-12 w-12 opacity-20 mb-4" />
-                                        <h3 className="text-xl font-bold mb-2">No Applicants Yet</h3>
-                                        <p>When students apply to your jobs, they will appear here.</p>
-                                    </div>
-                                ) : (
-                                    <div className="grid gap-6">
-                                        {applications.sort((a, b) => new Date(b.applied_at) - new Date(a.applied_at)).map((app) => (
-                                            <div key={app.id} className={`p-6 rounded-2xl border flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${darkMode ? "bg-white/10 border-white/20" : "bg-white border-gray-200"}`}>
-                                                <div className="flex items-start gap-4 flex-1">
-                                                    <div className="p-3 bg-emerald-500/20 text-emerald-500 rounded-full mt-1">
-                                                        <User size={24} />
-                                                    </div>
-                                                    <div className="flex-1 w-full">
-                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full">
-                                                            <div>
-                                                                <h3 className={`text-xl font-bold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{app.student_name}</h3>
-                                                                <p className={`text-sm font-medium ${darkMode ? "text-emerald-400" : "text-emerald-600"}`}>Applied for: {app.job_title}</p>
+                                            return (
+                                                <div key={job.id} className={`border-b last:border-0 transition-all ${darkMode ? "border-white/10" : "border-gray-100"}`}>
+                                                    <div 
+                                                        onClick={() => setExpandedJobId(isExpanded ? null : job.job_id)}
+                                                        className={`p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer transition-all ${darkMode ? "hover:bg-white/5" : "hover:bg-gray-50 bg-white"}`}
+                                                    >
+                                                        <div>
+                                                            <div className="flex items-center gap-3">
+                                                                <h3 className={`font-bold text-lg ${darkMode ? "text-white" : "text-gray-900"}`}>{job.job_title}</h3>
+                                                                {jobPendingCount > 0 && (
+                                                                    <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">{jobPendingCount} New</span>
+                                                                )}
                                                             </div>
-                                                            <button
-                                                                onClick={() => setSelectedApp(app)}
-                                                                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors ${darkMode ? "bg-white/5 hover:bg-white/10 text-gray-300" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}`}
-                                                            >
-                                                                View Details <ChevronRight size={16} />
+                                                            <p className={`text-sm mt-1 flex items-center gap-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                                                <MapPin size={14} /> {job.area || "Location"} • ₹{job.salary_per_day}/day
+                                                            </p>
+                                                            <div className="flex gap-2 mt-3">
+                                                                <span className="px-3 py-1 bg-emerald-500/20 text-emerald-500 text-xs font-bold rounded-full border border-emerald-500/30">Active</span>
+                                                                <span className={`px-3 py-1 text-xs font-bold rounded-full border ${darkMode ? "bg-white/5 border-white/10 text-gray-300" : "bg-gray-100 border-gray-200 text-gray-600"}`}>{job.shift_type}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job.job_id}`); }} className="px-4 py-2 rounded-xl font-bold bg-gray-500/10 hover:bg-gray-500/20 text-emerald-600 dark:text-emerald-400 transition-colors flex items-center gap-2">
+                                                                <ExternalLink size={16} /> View Listing
                                                             </button>
+                                                            <div className={`p-2 rounded-full transition-transform duration-300 ${isExpanded ? "rotate-90" : ""} ${darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-600"}`}>
+                                                                <ChevronRight size={20} />
+                                                            </div>
                                                         </div>
                                                     </div>
+
+                                                    {/* Nested Applicants Accordion */}
+                                                    <AnimatePresence>
+                                                        {isExpanded && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: "auto", opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                className={`overflow-hidden ${darkMode ? "bg-black/20 border-t border-white/5" : "bg-gray-50 border-t border-gray-100"}`}
+                                                            >
+                                                                <div className="p-6">
+                                                                    <h4 className={`text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                                                        <Users size={14} /> Applicants for this role ({jobApps.length})
+                                                                    </h4>
+                                                                    
+                                                                    {jobApps.length === 0 ? (
+                                                                        <div className={`p-6 text-center rounded-2xl border border-dashed ${darkMode ? "border-white/10 text-gray-400" : "border-gray-200 text-gray-500"}`}>
+                                                                            <p className="italic font-medium">No students have applied for this position yet.</p>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="space-y-3">
+                                                                            {jobApps.sort((a, b) => new Date(b.applied_at) - new Date(a.applied_at)).map((app) => (
+                                                                                <div key={app.id} className={`p-4 rounded-2xl border flex flex-col sm:flex-row justify-between sm:items-center gap-4 transition-all ${darkMode ? "bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10" : "bg-white border-gray-200 shadow-sm hover:border-emerald-500/30 hover:shadow-md"}`}>
+                                                                                    <div className="flex items-center gap-4">
+                                                                                        <div className={`p-3 rounded-full ${app.status === 'pending' ? "bg-emerald-500/20 text-emerald-500" : app.status === 'accepted' ? "bg-blue-500/20 text-blue-500" : "bg-red-500/20 text-red-500"}`}>
+                                                                                            <User size={20} />
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <h3 className={`font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{app.student_name}</h3>
+                                                                                            <p className={`text-xs font-bold uppercase tracking-wide mt-1 ${app.status === 'pending' ? (darkMode ? "text-gray-400" : "text-gray-500") : app.status === 'accepted' ? "text-emerald-500" : "text-red-500"}`}>
+                                                                                                Status: {app.status}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <button
+                                                                                        onClick={() => setSelectedApp(app)}
+                                                                                        className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors ${darkMode ? "bg-white/10 hover:bg-white/20 text-white" : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700"}`}
+                                                                                    >
+                                                                                        View Details <ChevronRight size={16} />
+                                                                                    </button>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            );
+                                        })
+                                    )}
+                                </div>
                             </div>
                         )}
 
