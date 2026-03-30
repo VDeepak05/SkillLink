@@ -47,32 +47,39 @@ from pymongo import MongoClient
 from urllib.parse import quote_plus
 from dotenv import load_dotenv
 
-# 1. Safely load .env only if we are running locally
+# 1. Print the exact path Python is looking at for your .env file
 env_path = os.path.join(os.path.dirname(__file__), "../../.env")
-if os.path.exists(env_path):
-    load_dotenv(dotenv_path=env_path)
+print(f"---> DEBUG: Looking for .env file at: {os.path.abspath(env_path)}")
 
-# 2. Fetch variables safely (checking for both UPPER and lower case just in case)
+load_dotenv(dotenv_path=env_path)
+
+# 2. Fetch variables safely
 USERNAME = os.getenv("MONGO_USERNAME") or os.getenv("mongo_username")
 RAW_PASSWORD = os.getenv("MONGO_PASSWORD") or os.getenv("mongo_password")
 CLUSTER = os.getenv("MONGO_CLUSTER") or os.getenv("mongo_cluster")
 
-# 3. Prevent the quote_plus(None) crash if variables are missing
-if not USERNAME or not RAW_PASSWORD or not CLUSTER:
-    print("CRITICAL WARNING: MongoDB Environment Variables are missing!")
-    # We initialize a dummy client so the app doesn't crash on boot, 
-    # but the specific route will fail gracefully and show you the real error.
-    client = MongoClient() 
-else:
+# 3. Print what Python actually found (without revealing your password)
+print(f"---> DEBUG: Username found? {bool(USERNAME)}")
+print(f"---> DEBUG: Password found? {bool(RAW_PASSWORD)}")
+print(f"---> DEBUG: Cluster found? {bool(CLUSTER)}")
+
+# 4. Connect
+if USERNAME and RAW_PASSWORD and CLUSTER:
     PASSWORD = quote_plus(RAW_PASSWORD)
     MONGO_URI = (
         f"mongodb+srv://{USERNAME}:{PASSWORD}@{CLUSTER}/"
         "job_recommendation?retryWrites=true&w=majority"
     )
+    print("---> DEBUG: Attempting to connect to MongoDB...")
     client = MongoClient(MONGO_URI)
+    db = client["job_recommendation"]
+    print("---> DEBUG: Connection successful!")
+else:
+    print("---> CRITICAL ERROR: Cannot connect. One or more variables are None.")
+    client = MongoClient() # Dummy fallback so the app boots, but routes will fail
+    db = client["job_recommendation"]
 
-db = client["job_recommendation"]
-
+# Collections
 users_col = db["users"]
 students_col = db["students"]
 retailers_col = db["retailers"]
@@ -81,10 +88,4 @@ logs_col = db["interaction_logs"]
 applications_col = db["applications"]
 messages_col = db["messages"]
 
-# ---------------------------
-# INDEXES REMOVED FOR SERVERLESS
-# ---------------------------
-# Vercel will time out if you try to build indexes on every API request.
-# Since you already ran this code locally, MongoDB Atlas has already saved these indexes! 
-# You do not need to run them again. If you ever need new indexes, create them 
-# directly in the MongoDB Atlas UI.
+# Indexes are commented out for Serverless compatibility!
