@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, Store, Sun, Moon, ArrowLeft } from "lucide-react";
+import { GraduationCap, Store, Sun, Moon, ArrowLeft, User, Lock, Mail, Phone, MapPin, Calendar, Briefcase, Camera, ArrowRight, CheckCircle, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
+import API_BASE_URL from "../api";
 import JobHuntImage from "../images/JobHunt.svg";
-import SkillLinkLogoProject from "../images/SkillLinkLogoProject.png";
-// import DatePicker from "react-datepicker";
-// import "react-datepicker/dist/react-datepicker.css";
+import SkillLinkIcon from "../images/SkiLinkLogoNew.png";
+import SkillLinkText from "../images/SkillLinktext.png";
+import FormDatePicker from "../components/FormDatePicker";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -29,28 +30,62 @@ const Login = () => {
         shop_name: "", // Retailer
         shop_id: "", // Retailer
         shop_type: "Supermarket", // Retailer
-        location: "" // Retailer
+        location: "", // Retailer
+        phone_no: "" // Shared/Retailer
     });
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // Load saved theme
-    useEffect(() => {
-        const savedTheme = localStorage.getItem("theme");
+    const handleDateChange = (date) => {
+        if (!date) return;
+        const formattedDate = date.toISOString().split('T')[0];
+        setFormData({ ...formData, dob: formattedDate });
+    };
 
+    // Auto-Redirect if already logged in + Role Recovery
+    useEffect(() => {
+        const savedTheme = localStorage.getItem("skilllink_theme_global");
         if (savedTheme === "light") {
             setDarkMode(false);
         } else {
             setDarkMode(true);
         }
-    }, []);
+
+        // 1. Recover activeRole if no role is selected yet (per tab)
+        const savedRole = sessionStorage.getItem("skilllink_activeRole");
+        if (savedRole && !activeRole) {
+            setActiveRole(savedRole);
+        }
+
+        // 2. Auto-redirect if user already has a session in this tab
+        const savedUser = sessionStorage.getItem('skilllink_authUser');
+        if (savedUser) {
+            try {
+                const userObj = JSON.parse(savedUser);
+                if (userObj.role === 'student') {
+                    navigate('/jobs');
+                } else if (userObj.role === 'retailer') {
+                    navigate('/retailer');
+                }
+            } catch (e) {
+                console.error("Auth recovery failed:", e);
+            }
+        }
+    }, [navigate]);
 
     const toggleTheme = () => {
         const newMode = !darkMode;
         setDarkMode(newMode);
-        localStorage.setItem("theme", newMode ? "dark" : "light");
+        localStorage.setItem("skilllink_theme_global", newMode ? "dark" : "light");
+    };
+
+    const handleRoleSelect = (role) => {
+        setActiveRole(role);
+        sessionStorage.setItem("skilllink_activeRole", role);
+        setErrorMsg("");
+        setFormData({ ...formData, email: "", password: "" });
     };
 
     const handleAuth = async (e) => {
@@ -59,13 +94,13 @@ const Login = () => {
         setErrorMsg("");
 
         const endpoint = isLogin
-            ? "http://localhost:8000/auth/signin"
-            : `http://localhost:8000/auth/signup/${activeRole}`;
+            ? `${API_BASE_URL}/auth/signin`
+            : `${API_BASE_URL}/auth/signup/${activeRole}`;
 
         let payload = {};
 
         if (isLogin) {
-            payload = { email: formData.email, password: formData.password };
+            payload = { email: formData.email, password: formData.password, role: activeRole };
         } else if (activeRole === "student") {
             payload = {
                 name: formData.name,
@@ -83,6 +118,7 @@ const Login = () => {
                 shop_id: formData.shop_id,
                 shop_type: formData.shop_type,
                 location: formData.location,
+                phone_no: formData.phone_no,
                 email: formData.email,
                 password: formData.password
             };
@@ -185,36 +221,38 @@ const Login = () => {
                                     initial={{ x: -80, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
                                     transition={{ duration: 1 }}
-                                    className="flex-1 flex justify-end items-center md:pr-8"
+                                    className="flex-1 flex justify-end items-center md:pr-4 lg:pr-10"
                                 >
                                     <motion.img
                                         src={JobHuntImage}
                                         alt="Job Hunt Illustration"
-                                        className={`w-48 md:w-56 lg:w-64 object-contain transition-all duration-500 ${darkMode ? 'drop-shadow-[0_4px_12px_rgba(255,255,255,0.1)]' : 'drop-shadow-2xl'}`}
+                                        className={`w-48 md:w-56 lg:w-64 object-contain transition-all duration-500 ${darkMode ? 'drop-shadow-[0_4px_12px_rgba(255,255,255,0.1)]' : 'drop-shadow-2xl'} md:translate-x-16`}
                                         animate={{ y: [0, -12, 0] }}
                                         transition={{ duration: 5, repeat: Infinity }}
                                     />
                                 </motion.div>
 
                                 {/* Center Divider */}
-                                <div className={`hidden md:block w-px h-64 transition-all duration-500 ${darkMode ? 'bg-gradient-to-b from-transparent via-emerald-500/50 to-transparent' : 'bg-gradient-to-b from-transparent via-emerald-600/30 to-transparent'}`}></div>
+                                <div className={`hidden md:block w-px h-64 md:ml-34 transition-all duration-500 ${darkMode ? 'bg-gradient-to-b from-transparent via-emerald-500/50 to-transparent' : 'bg-gradient-to-b from-transparent via-emerald-600/30 to-transparent'}`}></div>
 
                                 {/* Right Logo */}
                                 <motion.div
                                     initial={{ x: 80, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
                                     transition={{ duration: 1 }}
-                                    className="flex-1 flex flex-col items-center md:items-start justify-center md:pl-8"
+                                    className="flex-1 flex flex-col items-center justify-center md:pr-45"
                                 >
-                                    <img 
-                                        src={SkillLinkLogoProject} 
-                                        alt="SkillLink Logo" 
-                                        className={`h-32 md:h-40 lg:h-48 w-auto object-contain transition-all duration-500 drop-shadow-lg ${darkMode ? 'brightness-0 invert' : ''}`}
-                                    />
-                                    {/* Subtitle text below the logo like in the reference */}
-                                    <p className={`mt-6 text-lg md:text-xl font-medium tracking-wide transition-colors duration-300 ${darkMode ? 'text-gray-300' : 'text-emerald-800'}`}>
-                                        Connect, work, and earn while you learn.
-                                    </p>
+                                    <div className="flex flex-col items-center gap-4 mt-16">
+                                        <img
+                                            src={SkillLinkIcon}
+                                            alt="SkillLink Icon"
+                                            className={`h-28 md:h-36 lg:h-44 w-auto object-contain transition-all duration-500 drop-shadow-lg ${darkMode ? 'brightness-0 invert' : ''} md:mr-16`}
+                                        />
+
+                                        <p className={`mt-6 whitespace-nowrap text-lg md:text-xl font-medium tracking-wide transition-colors duration-300 ${darkMode ? 'text-gray-300' : 'text-emerald-800'}`}>
+                                            Connect, work, and earn while you learn.
+                                        </p>
+                                    </div>
                                 </motion.div>
                             </div>
 
@@ -226,11 +264,7 @@ const Login = () => {
                                 className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-4xl px-4"
                             >
                                 <div
-                                    onClick={() => {
-                                        setActiveRole("student");
-                                        setErrorMsg("");
-                                        setFormData({ ...formData, email: "", password: "" });
-                                    }}
+                                    onClick={() => handleRoleSelect("student")}
                                     className={`flex-1 flex items-center justify-start gap-6 p-6 md:p-8 w-full
                                     backdrop-blur-2xl rounded-3xl hover:-translate-y-2
                                     transition-all duration-300 cursor-pointer border shadow-xl
@@ -253,11 +287,7 @@ const Login = () => {
                                 </div>
 
                                 <div
-                                    onClick={() => {
-                                        setActiveRole("retailer");
-                                        setErrorMsg("");
-                                        setFormData({ ...formData, email: "", password: "" });
-                                    }}
+                                    onClick={() => handleRoleSelect("retailer")}
                                     className={`flex-1 flex items-center justify-start gap-6 p-6 md:p-8 w-full
                                     backdrop-blur-2xl rounded-3xl hover:-translate-y-2
                                     transition-all duration-300 cursor-pointer border shadow-xl
@@ -293,6 +323,7 @@ const Login = () => {
                                     <button
                                         onClick={() => {
                                             setActiveRole(null);
+                                            localStorage.removeItem("skilllink_activeRole");
                                             setIsLogin(true);
                                             setErrorMsg("");
                                         }}
@@ -320,13 +351,10 @@ const Login = () => {
 
                                                 <div className="w-full">
                                                     <label className="block text-xs font-semibold text-gray-400 mb-1 ml-1">Date of Birth</label>
-                                                    <input
-                                                        type="date"
-                                                        name="dob"
-                                                        value={formData.dob}
-                                                        onChange={handleChange}
-                                                        max={new Date().toISOString().split('T')[0]}
-                                                        required
+                                                    <FormDatePicker
+                                                        selected={formData.dob}
+                                                        onChange={handleDateChange}
+                                                        placeholderText="Select Date of Birth"
                                                         className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors"
                                                     />
                                                 </div>
@@ -348,6 +376,7 @@ const Login = () => {
                                                     <option value="Other">Other</option>
                                                 </select>
                                                 <input type="text" name="location" value={formData.location} onChange={handleChange} placeholder="Shop Location Area" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors" />
+                                                <input type="tel" name="phone_no" value={formData.phone_no} onChange={handleChange} placeholder="Owner Phone Number" required className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors" />
                                             </>
                                         )}
 

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Shield, Lock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
+import API_BASE_URL from "../api";
 
 const AdminLogin = () => {
     const navigate = useNavigate();
@@ -27,7 +28,7 @@ const AdminLogin = () => {
         setErrorMsg("");
 
         try {
-            const res = await fetch("http://localhost:8000/admin/login", {
+            const res = await fetch(`${API_BASE_URL}/admin/signin`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(credentials)
@@ -67,7 +68,7 @@ const AdminLogin = () => {
                 </div>
 
                 <h1 className={`text-2xl font-bold text-center mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
-                    Admin Portal
+                    SkiLink Admin Portal
                 </h1>
                 <p className={`text-center text-sm mb-8 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                     Restricted access area for SkiLink management.
@@ -111,7 +112,7 @@ const AdminLogin = () => {
                         {loading ? "Authenticating..." : (
                             <>
                                 <Lock className="h-4 w-4 mr-2" />
-                                Secure Login
+                                Login
                             </>
                         )}
                     </button>

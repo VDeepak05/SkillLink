@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, CheckCircle, XCircle, Search, RefreshCw, LogOut } from "lucide-react";
+import API_BASE_URL from "../api";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,7 +28,7 @@ const AdminDashboard = () => {
     const fetchRetailers = async () => {
         setLoading(true);
         try {
-            const res = await fetch("http://localhost:8000/admin/retailers");
+            const res = await fetch(`${API_BASE_URL}/admin/retailers`);
             if (res.ok) {
                 const data = await res.json();
                 setRetailers(data.retailers || []);
@@ -46,7 +47,7 @@ const AdminDashboard = () => {
         if (!window.confirm(`Are you sure you want to approve ${shopName}?`)) return;
 
         try {
-            const res = await fetch(`http://localhost:8000/admin/retailers/${id}/verify`, {
+            const res = await fetch(`${API_BASE_URL}/admin/retailers/${id}/verify`, {
                 method: "PUT"
             });
             if (res.ok) {
@@ -99,7 +100,7 @@ const AdminDashboard = () => {
             <header className={`sticky top-0 z-50 px-6 py-4 flex items-center justify-between border-b ${darkMode ? "bg-gray-900/80 border-gray-800 backdrop-blur-xl" : "bg-white/80 border-gray-200 backdrop-blur-xl"}`}>
                 <div className="flex items-center gap-3">
                     <Shield className="h-6 w-6 text-red-500" />
-                    <h1 className="text-xl font-bold tracking-tight">Admin System Central</h1>
+                    <h1 className="text-xl font-bold tracking-tight">SkiLink Admin</h1>
                 </div>
                 <div className="flex items-center gap-6">
                     <span className={`text-sm font-medium px-3 py-1 rounded-full ${darkMode ? "bg-gray-800" : "bg-gray-100"}`}>

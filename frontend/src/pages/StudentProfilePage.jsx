@@ -3,8 +3,8 @@ import { useAuth } from "../context/AuthContext";
 import { User, Mail, Phone, Calendar, BookOpen, Hash, Check, Save, Lock, Edit2, X, AlertCircle, Loader2, CheckCircle2, GraduationCap, Sun, Moon, Monitor, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import FormDatePicker from "../components/FormDatePicker";
+import API_BASE_URL from "../api";
 
 const SKILL_OPTIONS = [
     "Billing & Cashier", "Customer Service", "Inventory Management",
@@ -25,6 +25,7 @@ const StudentProfilePage = () => {
 
     const [selectedSkills, setSelectedSkills] = useState([]);
     const [savingSkills, setSavingSkills] = useState(false);
+    const [skillsUpdatedMsg, setSkillsUpdatedMsg] = useState(false);
 
     const [oldPassword, setOldPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
@@ -34,14 +35,16 @@ const StudentProfilePage = () => {
 
     // Theme State
     const [darkMode, setDarkMode] = useState(() => {
-        const saved = localStorage.getItem("theme");
+        const themeKey = user ? `skilllink_theme_${user.id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
         return saved !== "light"; // Default to dark
     });
 
     const toggleTheme = () => {
         const newMode = !darkMode;
         setDarkMode(newMode);
-        localStorage.setItem("theme", newMode ? "dark" : "light");
+        const themeKey = user ? `skilllink_theme_${user.id}` : "skilllink_theme_global";
+        localStorage.setItem(themeKey, newMode ? "dark" : "light");
     };
 
     useEffect(() => {
@@ -52,7 +55,7 @@ const StudentProfilePage = () => {
 
         const fetchProfile = async () => {
             try {
-                const res = await fetch(`http://localhost:8000/student/profile/${user.id}`);
+                const res = await fetch(`${API_BASE_URL}/student/profile/${user.id}`);
                 if (res.ok) {
                     const data = await res.json();
                     setProfile(data.profile);
@@ -70,6 +73,12 @@ const StudentProfilePage = () => {
     const handleProfileChange = (e) => {
         const { name, value } = e.target;
         setEditedProfile(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleProfileDateChange = (date) => {
+        if (!date) return;
+        const formattedDate = date.toISOString().split('T')[0];
+        setEditedProfile(prev => ({ ...prev, dob: formattedDate }));
     };
 
     const handleSaveProfile = async () => {
@@ -91,7 +100,7 @@ const StudentProfilePage = () => {
 
         setSavingProfile(true);
         try {
-            const res = await fetch(`http://localhost:8000/student/profile/${user.id}`, {
+            const res = await fetch(`${API_BASE_URL}/student/profile/${user.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -128,13 +137,14 @@ const StudentProfilePage = () => {
     const handleSaveSkills = async () => {
         setSavingSkills(true);
         try {
-            const res = await fetch(`http://localhost:8000/student/profile/${user.id}`, {
+            const res = await fetch(`${API_BASE_URL}/student/profile/${user.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ skills: selectedSkills })
             });
             if (res.ok) {
-                alert("Skills synchronized!");
+                setSkillsUpdatedMsg(true);
+                setTimeout(() => setSkillsUpdatedMsg(false), 2500);
             }
         } catch (error) {
             console.error("Skills save error:", error);
@@ -153,7 +163,7 @@ const StudentProfilePage = () => {
 
         setChangingPwd(true);
         try {
-            const res = await fetch(`http://localhost:8000/student/password/${user.id}`, {
+            const res = await fetch(`${API_BASE_URL}/student/profile/${user.id}/password`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
@@ -212,7 +222,7 @@ const StudentProfilePage = () => {
                         transition={{ delay: 0.1 }}
                         className="lg:col-span-2 space-y-8"
                     >
-                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white/80 border-gray-200"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl relative overflow-hidden group transition-all duration-500`}>
+                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white border-gray-300"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl relative group transition-all duration-500`}>
                             <div className="absolute top-0 right-0 p-6">
                                 {!isEditingProfile ? (
                                     <button
@@ -262,26 +272,37 @@ const StudentProfilePage = () => {
                                 <ProfileField icon={<User />} label="Full Name" name="name" value={isEditingProfile ? editedProfile.name : profile.name} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
                                 <ProfileField icon={<Mail />} label="Email" name="email" value={profile.email} editing={false} darkMode={darkMode} />
                                 <ProfileField icon={<Phone />} label="Phone" name="phone_no" value={isEditingProfile ? editedProfile.phone_no : profile.phone_no} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
-                                <ProfileField icon={<Calendar />} label="Date of Birth" name="dob" value={isEditingProfile ? editedProfile.dob : profile.dob} editing={isEditingProfile} onChange={handleProfileChange} type="date" darkMode={darkMode} />
+                                <ProfileField icon={<Calendar />} label="Date of Birth" name="dob" value={isEditingProfile ? editedProfile.dob : profile.dob} editing={isEditingProfile} onChange={isEditingProfile ? handleProfileDateChange : handleProfileChange} type="date" darkMode={darkMode} />
                                 <ProfileField icon={<BookOpen />} label="College" name="college" value={isEditingProfile ? editedProfile.college : profile.college} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
                                 <ProfileField icon={<Hash />} label="Reg. Number" name="college_reg_no" value={isEditingProfile ? editedProfile.college_reg_no : profile.college_reg_no} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
                             </div>
                         </div>
 
                         {/* Skills Section */}
-                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white/80 border-gray-200"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500`}>
+                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white border-gray-300"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500`}>
                             <div className="flex justify-between items-center mb-8">
                                 <h2 className={`text-xl font-bold flex items-center gap-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
                                     <span className={`p-2 rounded-lg ${darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-600"}`}><CheckCircle2 size={20} /></span>
                                     Skill Set
                                 </h2>
-                                <button
-                                    onClick={handleSaveSkills}
-                                    disabled={savingSkills}
-                                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-2xl font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
-                                >
-                                    {savingSkills ? <Loader2 className="animate-spin" size={18} /> : <span>Update Skills</span>}
-                                </button>
+                                <div className="flex items-center gap-4">
+                                    {skillsUpdatedMsg && (
+                                        <motion.span
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="text-emerald-500 font-bold text-sm"
+                                        >
+                                            Skills Updated!
+                                        </motion.span>
+                                    )}
+                                    <button
+                                        onClick={handleSaveSkills}
+                                        disabled={savingSkills}
+                                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-2xl font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                                    >
+                                        {savingSkills ? <Loader2 className="animate-spin" size={18} /> : <span>Update Skills</span>}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -291,11 +312,11 @@ const StudentProfilePage = () => {
                                         onClick={() => toggleSkill(skill)}
                                         className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 text-xs font-bold text-center group/skill
                                             ${selectedSkills.includes(skill)
-                                                ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
-                                                : "bg-white/5 border-white/5 hover:border-emerald-500/30 text-gray-400 hover:text-emerald-300"
+                                                ? (darkMode ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "bg-emerald-50 border-emerald-500 text-emerald-800")
+                                                : (darkMode ? "bg-white/5 border-white/5 hover:border-emerald-500/30 text-gray-400 hover:text-emerald-300" : "bg-white border-gray-300 hover:border-emerald-400 text-gray-600 hover:text-emerald-700")
                                             }`}
                                     >
-                                        <div className={`p-1.5 rounded-full transition-all ${selectedSkills.includes(skill) ? "bg-emerald-500/20" : "bg-white/5 group-hover/skill:bg-emerald-500/10"}`}>
+                                        <div className={`p-1.5 rounded-full transition-all ${selectedSkills.includes(skill) ? (darkMode ? "bg-emerald-500/20" : "bg-emerald-200") : (darkMode ? "bg-white/5 group-hover/skill:bg-emerald-500/10" : "bg-gray-100 group-hover/skill:bg-emerald-100")}`}>
                                             {selectedSkills.includes(skill) ? <Check size={14} /> : <div className="w-3.5 h-3.5" />}
                                         </div>
                                         {skill}
@@ -346,7 +367,7 @@ const StudentProfilePage = () => {
                         </div>
 
                         {/* Status Card */}
-                        <div className={`${darkMode ? "bg-emerald-500/10 border-emerald-500/20" : "bg-emerald-50 border-emerald-100"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500`}>
+                        <div className={`${darkMode ? "bg-emerald-500/10 border-emerald-500/20" : "bg-emerald-50 border-emerald-300"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500`}>
                             <div className="flex items-center gap-4 mb-6">
                                 <div className={`p-3 rounded-2xl ${darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-white shadow-sm text-emerald-600"}`}>
                                     <GraduationCap size={24} />
@@ -362,7 +383,7 @@ const StudentProfilePage = () => {
                         </div>
 
                         {/* Password Change Card */}
-                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white/80 border-gray-200"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500`}>
+                        <div className={`${darkMode ? "bg-white/10 border-white/20" : "bg-white border-gray-300"} backdrop-blur-md border rounded-3xl p-8 shadow-2xl transition-all duration-500`}>
                             <h2 className={`text-xl font-bold mb-6 flex items-center gap-3 ${darkMode ? "text-white" : "text-gray-900"}`}>
                                 <span className={`p-2 rounded-lg ${darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-500"}`}><Lock size={20} /></span>
                                 Security
@@ -410,13 +431,22 @@ const ProfileField = ({ icon, label, name, value, editing, onChange, type = "tex
             {label}
         </label>
         {editing ? (
-            <input
-                type={type}
-                name={name}
-                value={value || ''}
-                onChange={onChange}
-                className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all text-sm font-medium ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
-            />
+            type === "date" ? (
+                <FormDatePicker
+                    selected={value}
+                    onChange={onChange}
+                    darkMode={darkMode}
+                    className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all text-sm font-medium ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+                />
+            ) : (
+                <input
+                    type={type}
+                    name={name}
+                    value={value || ''}
+                    onChange={onChange}
+                    className={`w-full border rounded-2xl px-5 py-3.5 focus:outline-none focus:border-emerald-500/50 transition-all text-sm font-medium ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-gray-50 border-gray-200 text-gray-900"}`}
+                />
+            )
         ) : (
             <div className="px-1">
                 <p className={`text-lg font-bold tracking-tight ${darkMode ? "text-white" : "text-gray-900"}`}>{value || "—"}</p>

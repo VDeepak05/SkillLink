@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Store, User, Mail, MapPin, Hash, Check, Save, Lock, Edit2, X, AlertCircle, Loader2, CheckCircle2, Sun, Moon, Settings } from "lucide-react";
+import { Store, User, Mail, MapPin, Hash, Phone, Check, Save, Lock, Edit2, X, AlertCircle, Loader2, CheckCircle2, Sun, Moon, Settings } from "lucide-react";
+import API_BASE_URL from '../api';
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -23,14 +24,16 @@ const RetailerProfilePage = () => {
 
     // Theme State
     const [darkMode, setDarkMode] = useState(() => {
-        const saved = localStorage.getItem("theme");
+        const themeKey = user ? `skilllink_theme_${user.id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
         return saved !== "light"; // Default to dark
     });
 
     const toggleTheme = () => {
         const newMode = !darkMode;
         setDarkMode(newMode);
-        localStorage.setItem("theme", newMode ? "dark" : "light");
+        const themeKey = user ? `skilllink_theme_${user.id}` : "skilllink_theme_global";
+        localStorage.setItem(themeKey, newMode ? "dark" : "light");
     };
 
     useEffect(() => {
@@ -42,7 +45,7 @@ const RetailerProfilePage = () => {
         const fetchProfile = async () => {
             try {
                 // We use the new /retailer/profile GET route
-                const res = await fetch(`http://localhost:8000/retailer/profile/${user.id}`);
+                const res = await fetch(`${API_BASE_URL}/retailer/profile/${user.id}`);
                 if (res.ok) {
                     const data = await res.json();
                     setProfile(data.profile);
@@ -65,14 +68,15 @@ const RetailerProfilePage = () => {
         setProfileErrorMsgs("");
         setSavingProfile(true);
         try {
-            const res = await fetch(`http://localhost:8000/retailer/profile/${user.id}`, {
+            const res = await fetch(`${API_BASE_URL}/retailer/profile/${user.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     owner_name: editedProfile.owner_name,
                     shop_name: editedProfile.shop_name,
                     shop_type: editedProfile.shop_type,
-                    location: editedProfile.location
+                    location: editedProfile.location,
+                    phone_no: editedProfile.phone_no
                 })
             });
             if (res.ok) {
@@ -219,6 +223,7 @@ const RetailerProfilePage = () => {
                                 <ProfileField icon={<Store />} label="Category" name="shop_type" value={isEditingProfile ? editedProfile.shop_type : profile.shop_type} editing={isEditingProfile} onChange={handleProfileChange} type="select" darkMode={darkMode} />
                                 <ProfileField icon={<Hash />} label="Shop ID" name="shop_id" value={profile.shop_id} editing={false} darkMode={darkMode} />
                                 <ProfileField icon={<MapPin />} label="Location" name="location" value={isEditingProfile ? editedProfile.location : profile.location} editing={isEditingProfile} onChange={handleProfileChange} darkMode={darkMode} />
+                                <ProfileField icon={<Phone />} label="Phone Number" name="phone_no" value={isEditingProfile ? editedProfile.phone_no : profile.phone_no} editing={isEditingProfile} onChange={handleProfileChange} type="tel" darkMode={darkMode} />
                             </div>
                         </div>
 

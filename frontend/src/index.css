@@ -26,7 +26,9 @@
 
 body {
     font-family: var(--font-sans);
-    background-color: #F3F4F6;
+    background-color: #0b120f;
+    /* Deep Forest Black/Green */
+    color: #e2e8f0;
 }
 
 @keyframes gradientShiftDark {
@@ -43,38 +45,74 @@ body {
     }
 }
 
+/* 🌌 Premium Dark Animated Gradient */
 .dark-animated-gradient {
     background: linear-gradient(-45deg,
-            #0f172a,
+            #0b120f,
             #064e3b,
             #052e16,
-            #0c4a6e);
+            #101f1b);
     background-size: 400% 400%;
     animation: gradientShiftDark 18s ease infinite;
 }
 
-/* 🌌 Premium Dark Animated Gradient */
+/* 🧪 Premium Green Glass Utility */
+/* .premium-green-glass {
+    background: rgba(6, 95, 70, 0.005) !important;
+    /* Emerald 800-900 hybrid with 45% alpha */
+/*backdrop-filter: blur(24px) saturate(300%) !important;
+    border-bottom: 1.5px solid rgba(52, 211, 153, 0.3) !important;
+    box-shadow: 0 8px 32px 0 rgba(6, 78, 59, 0.37) !important;
+} */
+.premium-green-glass {
+    /* 💎 Deep Emerald 800 with 80% opacity - this makes it truly GREEN */
+    background: rgba(1, 65, 41, 0.9) !important;
+
+    /* ✨ Lower blur but higher saturation to keep the green deep and punchy */
+    backdrop-filter: blur(8px) saturate(200%) !important;
+
+    border-bottom: 2px solid rgba(16, 255, 129, 0.3) !important;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.7) !important;
+}
+
+
+.premium-green-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), transparent 60%),
+        linear-gradient(to right, rgba(16, 185, 129, 0.1), transparent 50%, rgba(16, 185, 129, 0.1));
+    pointer-events: none;
+    z-index: -1;
+}
 
 /* ==========================================================================
    React DatePicker Custom Aesthetic Theme
    ========================================================================== */
 
+.react-datepicker-wrapper {
+    width: 100% !important;
+}
+
 .react-datepicker {
     font-family: var(--font-sans) !important;
-    background-color: rgba(30, 41, 59, 0.95) !important;
+    background-color: #1e293b !important;
+    /* Slate 800 */
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 1rem !important;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 1.25rem !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
     backdrop-filter: blur(16px) !important;
     overflow: hidden;
+    color: #e2e8f0 !important;
 }
 
 .react-datepicker__header {
-    background-color: rgba(16, 185, 129, 0.1) !important;
+    background-color: #111e1b !important;
+    /* Very dark green/black */
     border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-    padding-top: 1rem !important;
-    border-top-left-radius: 1rem !important;
-    border-top-right-radius: 1rem !important;
+    padding-top: 0 !important;
+    border-top-left-radius: 1.25rem !important;
+    border-top-right-radius: 1.25rem !important;
 }
 
 .react-datepicker__current-month,
@@ -83,95 +121,63 @@ body {
     color: #fff !important;
     font-weight: 700 !important;
     font-size: 1.1rem !important;
-    letter-spacing: 0.025em !important;
+    display: none;
+    /* Hide default header since we use renderCustomHeader */
 }
 
 .react-datepicker__day-name {
-    color: rgba(255, 255, 255, 0.6) !important;
+    color: rgba(255, 255, 255, 0.4) !important;
     font-weight: 600 !important;
+    font-size: 0.70rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     margin: 0.2rem !important;
-    width: 2rem !important;
+    width: 1.8rem !important;
 }
 
 .react-datepicker__day {
     color: #e2e8f0 !important;
     margin: 0.2rem !important;
-    width: 2rem !important;
-    line-height: 2rem !important;
+    width: 1.8rem !important;
+    line-height: 1.8rem !important;
     border-radius: 0.5rem !important;
-    transition: all 0.2s ease !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    font-weight: 500 !important;
+    font-size: 0.85rem !important;
 }
 
 .react-datepicker__day:hover {
-    background-color: rgba(16, 185, 129, 0.3) !important;
-    color: #fff !important;
-    transform: scale(1.1);
+    background-color: rgba(16, 185, 129, 0.15) !important;
+    color: #10b981 !important;
+    transform: translateY(-1px) scale(1.05);
 }
 
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
+    background: #10b981 !important;
+    /* Emerald 500 */
     color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4) !important;
+    transform: scale(1) !important;
+}
+
+.react-datepicker__day--today {
+    color: #10b981 !important;
     font-weight: bold !important;
-    box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.39) !important;
-    transform: scale(1.05);
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
 }
 
 .react-datepicker__day--outside-month {
-    color: rgba(255, 255, 255, 0.2) !important;
-}
-
-.react-datepicker__day--disabled {
     color: rgba(255, 255, 255, 0.1) !important;
 }
 
-.react-datepicker__day--disabled:hover {
-    background-color: transparent !important;
-    transform: none !important;
+.react-datepicker__day--disabled {
+    color: rgba(255, 255, 255, 0.05) !important;
 }
 
-.react-datepicker__navigation-icon::before {
-    border-color: rgba(255, 255, 255, 0.6) !important;
-    transition: border-color 0.2s ease !important;
-}
-
-.react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
-    border-color: #10b981 !important;
-}
-
-.react-datepicker__year-dropdown,
-.react-datepicker__month-dropdown,
-.react-datepicker__month-year-dropdown {
-    background-color: #1e293b !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
-    border-radius: 0.75rem !important;
-}
-
-.react-datepicker__year-option,
-.react-datepicker__month-option,
-.react-datepicker__month-year-option {
-    color: #e2e8f0 !important;
-    padding: 0.5rem !important;
-    transition: background-color 0.2s ease, color 0.2s ease !important;
-}
-
-.react-datepicker__year-option:hover,
-.react-datepicker__month-option:hover,
-.react-datepicker__month-year-option:hover {
-    background-color: #10b981 !important;
-    color: #fff !important;
-}
-
-.react-datepicker__year-read-view--down-arrow,
-.react-datepicker__month-read-view--down-arrow,
-.react-datepicker__month-year-read-view--down-arrow {
-    border-color: rgba(255, 255, 255, 0.6) !important;
-}
-
-.react-datepicker__year-read-view:hover .react-datepicker__year-read-view--down-arrow,
-.react-datepicker__month-read-view:hover .react-datepicker__month-read-view--down-arrow {
-    border-color: #10b981 !important;
+.react-datepicker__month {
+    margin: 0.4rem 0.8rem 0.8rem 0.8rem !important;
 }
 
 /* Light Theme Overrides (if darkMode is false, .react-datepicker won't be inside a dark wrapper normally, but we can set generic styles or assume it adapts if we use context. For now, since Login uses animated dark mostly, this premium dark glass fits the overarching vibe requested). */
@@ -183,6 +189,8 @@ body {
 
 /* Hide scrollbar for IE, Edge and Firefox */
 * {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
 }

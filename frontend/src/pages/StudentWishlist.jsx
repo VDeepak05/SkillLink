@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { Heart, Search, Loader2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import API_BASE_URL from '../api';
 import JobCard from '../components/JobCard';
 
 const StudentWishlist = () => {
@@ -13,15 +14,22 @@ const StudentWishlist = () => {
 
     // Theme State
     const [darkMode, setDarkMode] = useState(() => {
-        const saved = localStorage.getItem("theme");
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
         return saved !== "light"; // Default to dark
     });
+
+    useEffect(() => {
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        setDarkMode(saved !== "light");
+    }, [user]);
 
     useEffect(() => {
         const fetchWishlist = async () => {
             if (!user) return;
             try {
-                const res = await fetch(`http://localhost:8000/student/wishlist/${user.id}`);
+                const res = await fetch(`${API_BASE_URL}/student/wishlist/${user.id}`);
                 const data = await res.json();
                 if (res.ok) {
                     // Map data to match JobCard expectations if needed
@@ -54,10 +62,10 @@ const StudentWishlist = () => {
 
     if (loading) {
         return (
-            <div className="min-h-[80vh] flex items-center justify-center">
+            <div className={`min-h-[80vh] flex items-center justify-center ${darkMode ? "dark-animated-gradient" : "bg-white"}`}>
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="h-10 w-10 text-red-500 animate-spin" />
-                    <p className="text-gray-500 font-medium">Fetching your saved jobs...</p>
+                    <p className={`${darkMode ? "text-red-400" : "text-gray-500"} font-medium`}>Fetching your saved jobs...</p>
                 </div>
             </div>
         );

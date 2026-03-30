@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Check } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import API_BASE_URL from '../api';
+
+const SKILL_OPTIONS = [
+    "Billing & Cashier", "Customer Service", "Inventory Management",
+    "Delivery Driver", "Shelf Stocking", "Data Entry",
+    "Technical Support", "Sales Associate", "Social Media Management",
+    "Graphic Design", "Language Translation", "Tutoring"
+];
 
 const PostJob = () => {
     const navigate = useNavigate();
@@ -13,17 +21,23 @@ const PostJob = () => {
         shiftType: 'Evening (4 hours)',
         openings: 1,
         isSeasonal: false,
-        description: ''
+        description: '',
+        skills: []
     });
     const [loading, setLoading] = useState(false);
 
     // Theme State
-    const [darkMode, setDarkMode] = useState(true);
+    const [darkMode, setDarkMode] = useState(() => {
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        return saved !== "light"; // Default to dark if not set to light
+    });
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem("theme");
-        setDarkMode(savedTheme !== "light"); // Default to dark if not set to light
-    }, []);
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        setDarkMode(saved !== "light");
+    }, [user]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -33,12 +47,23 @@ const PostJob = () => {
         }));
     };
 
+    const toggleSkill = (skill) => {
+        setFormData(prev => {
+            const currentSkills = prev.skills || [];
+            if (currentSkills.includes(skill)) {
+                return { ...prev, skills: currentSkills.filter(s => s !== skill) };
+            } else {
+                return { ...prev, skills: [...currentSkills, skill] };
+            }
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:8000/jobs', {
+            const res = await fetch(`${API_BASE_URL}/jobs/post`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -49,7 +74,8 @@ const PostJob = () => {
                     shift_type: formData.shiftType,
                     openings: parseInt(formData.openings),
                     is_seasonal: formData.isSeasonal,
-                    description: formData.description
+                    description: formData.description,
+                    skills: formData.skills || []
                 })
             });
 
@@ -88,12 +114,12 @@ const PostJob = () => {
 
                             <div>
                                 <label className={`block text-xs font-bold uppercase tracking-widest mb-2 ml-1 ${darkMode ? "text-gray-400" : "text-gray-700"}`}>Shop Type</label>
-                                <select name="shopType" value={formData.shopType} onChange={handleChange} className={`w-full px-5 py-3.5 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium appearance-none ${darkMode ? "bg-slate-800 border-white/10 text-white" : "bg-white border-gray-300 focus:border-olive-500 text-gray-900"}`}>
-                                    <option className={darkMode ? "bg-slate-800 text-white" : ""}>Supermarket</option>
-                                    <option className={darkMode ? "bg-slate-800 text-white" : ""}>Bakery</option>
-                                    <option className={darkMode ? "bg-slate-800 text-white" : ""}>Clothing Store</option>
-                                    <option className={darkMode ? "bg-slate-800 text-white" : ""}>Cafe</option>
-                                    <option className={darkMode ? "bg-slate-800 text-white" : ""}>Other</option>
+                                <select name="shopType" value={formData.shopType} onChange={handleChange} className={`w-full px-5 py-3.5 rounded-2xl border cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium appearance-none ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-300 focus:border-olive-500 text-gray-900"}`}>
+                                    <option className={darkMode ? "bg-[#0b120f] text-white" : ""}>Supermarket</option>
+                                    <option className={darkMode ? "bg-[#0b120f] text-white" : ""}>Bakery</option>
+                                    <option className={darkMode ? "bg-[#0b120f] text-white" : ""}>Clothing Store</option>
+                                    <option className={darkMode ? "bg-[#0b120f] text-white" : ""}>Cafe</option>
+                                    <option className={darkMode ? "bg-[#0b120f] text-white" : ""}>Other</option>
                                 </select>
                             </div>
 
@@ -104,11 +130,11 @@ const PostJob = () => {
 
                             <div>
                                 <label className={`block text-xs font-bold uppercase tracking-widest mb-2 ml-1 ${darkMode ? "text-gray-400" : "text-gray-700"}`}>Shift Type</label>
-                                <select name="shiftType" value={formData.shiftType} onChange={handleChange} className={`w-full px-5 py-3.5 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium appearance-none ${darkMode ? "bg-slate-800 border-white/10 text-white" : "bg-white border-gray-300 focus:border-olive-500 text-gray-900"}`}>
-                                    <option className={darkMode ? "bg-slate-800 text-white" : ""}>Evening (4 hours)</option>
-                                    <option className={darkMode ? "bg-slate-800 text-white" : ""}>Morning (4 hours)</option>
-                                    <option className={darkMode ? "bg-slate-800 text-white" : ""}>Weekend Full Day</option>
-                                    <option className={darkMode ? "bg-slate-800 text-white" : ""}>Flexible</option>
+                                <select name="shiftType" value={formData.shiftType} onChange={handleChange} className={`w-full px-5 py-3.5 rounded-2xl border cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium appearance-none ${darkMode ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-300 focus:border-olive-500 text-gray-900"}`}>
+                                    <option className={darkMode ? "bg-[#0b120f] text-white" : ""}>Evening (4 hours)</option>
+                                    <option className={darkMode ? "bg-[#0b120f] text-white" : ""}>Morning (4 hours)</option>
+                                    <option className={darkMode ? "bg-[#0b120f] text-white" : ""}>Weekend Full Day</option>
+                                    <option className={darkMode ? "bg-[#0b120f] text-white" : ""}>Flexible</option>
                                 </select>
                             </div>
 
@@ -122,6 +148,29 @@ const PostJob = () => {
                                     <input type="checkbox" name="isSeasonal" checked={formData.isSeasonal} onChange={handleChange} className={`w-5 h-5 rounded transition-all focus:ring-emerald-500 ${darkMode ? "text-emerald-500 bg-slate-800 border-gray-600 focus:ring-offset-slate-900" : "text-olive-600 border-gray-300"}`} />
                                     <span className="text-sm font-bold">This is a seasonal job (e.g. Festival Season)</span>
                                 </label>
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className={`block text-xs font-bold uppercase tracking-widest mb-3 ml-1 ${darkMode ? "text-gray-400" : "text-gray-700"}`}>Required Skills (Optional)</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {SKILL_OPTIONS.map(skill => (
+                                        <button
+                                            key={skill}
+                                            type="button"
+                                            onClick={() => toggleSkill(skill)}
+                                            className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 text-xs font-bold text-center group/skill
+                                                ${(formData.skills || []).includes(skill)
+                                                    ? (darkMode ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "bg-emerald-50 border-emerald-500 text-emerald-800")
+                                                    : (darkMode ? "bg-white/5 border-white/5 hover:border-emerald-500/30 text-gray-400 hover:text-emerald-300" : "bg-white border-gray-300 hover:border-emerald-400 text-gray-600 hover:text-emerald-700")
+                                                }`}
+                                        >
+                                            <div className={`p-1.5 rounded-full transition-all ${(formData.skills || []).includes(skill) ? (darkMode ? "bg-emerald-500/20" : "bg-emerald-200") : (darkMode ? "bg-white/5 group-hover/skill:bg-emerald-500/10" : "bg-gray-100 group-hover/skill:bg-emerald-100")}`}>
+                                                {(formData.skills || []).includes(skill) ? <Check size={14} /> : <div className="w-3.5 h-3.5" />}
+                                            </div>
+                                            {skill}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
                             <div className="md:col-span-2">

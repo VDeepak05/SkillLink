@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from datetime import datetime, timezone
 import uuid
 from bson.objectid import ObjectId
@@ -7,7 +7,8 @@ from backend.app.schemas import (
     StudentProfile, InteractionLog, JobResponse, JobCreate, 
     StudentSignUp, RetailerSignUp, UserSignIn, UserResponse,
     JobApplicationCreate, JobApplicationResponse, ShopProfileUpdate,
-    StudentProfileUpdate, StudentPasswordUpdate, MessageResponse
+    StudentProfileUpdate, StudentPasswordUpdate, MessageResponse,
+    PaginatedJobResponse
 )
 from backend.db.mongo_client import logs_col, jobs_col, users_col, applications_col, messages_col
 
@@ -80,6 +81,9 @@ def signin(credentials: UserSignIn):
     if not verify_password(credentials.password, user["password"]):
         raise HTTPException(status_code=401, detail="Incorrect password.")
         
+    if credentials.role and credentials.role != user["role"]:
+        raise HTTPException(status_code=401, detail="Invalid credentials.")
+        
     name = user.get("name") if user["role"] == "student" else user.get("owner_name")
     return UserResponse(id=str(user["_id"]), role=user["role"], name=name, email=user["email"])
 
@@ -136,16 +140,51 @@ def reject_retailer(user_id: str):
 #                 USER AUTH ROUTES
 # ---------------------------------------------------------
 
-@router.post("/recommend", response_model=list[JobResponse])
-def get_recommendations(profile: StudentProfile):
-    results = recommend_jobs(profile.dict())
-    for res in results:
-        if not hasattr(res, "id") or not res.id:
-            res.id = res.job_id
-    return results
+@router.get("/recommend/{student_id}", response_model=PaginatedJobResponse)
+def get_recommendations(student_id: str, skip: int = 0, limit: int = 20,
+                        search: str = "", distance: int = 20, 
+                        shifts: str = "", shop_type: str = "All Types", min_salary: int = 0):
+    try:
+        from bson import ObjectId
+        student = users_col.find_one({"_id": ObjectId(student_id), "role": "student"})
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
 
-@router.get("/jobs", response_model=list[JobResponse])
-def get_jobs(search: str = ""):
+        # Create profile dictionary matching StudentProfile schema
+        profile_dict = {
+            "student_id": student_id,
+            "skills": " ".join(student.get("skills", [])),
+            "preferred_shift": student.get("preferred_shift", ""),
+            "max_distance_km": distance, # Dynamically bound to UI distance filter
+            "latitude": student.get("latitude"),
+            "longitude": student.get("longitude")
+        }
+        
+        filters = {
+            "search": search,
+            "shifts": shifts,
+            "shop_type": shop_type,
+            "min_salary": min_salary
+        }
+
+        from backend.app.recommender import recommend_jobs
+        results, total_count = recommend_jobs(profile_dict, skip=skip, limit=limit, extra_filters=filters)
+        
+        # map to JobResponse
+        for res in results:
+            if not res.get("id"):
+                res["id"] = res["job_id"]
+                
+        return {"total_count": total_count, "jobs": results}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/jobs", response_model=PaginatedJobResponse)
+def get_jobs(search: str = "", skip: int = 0, limit: int = 20,
+             distance: int = 20, shifts: str = "", shop_type: str = "All Types", min_salary: int = 0):
+    import re
     query = {}
     if search:
         query["$or"] = [
@@ -154,9 +193,28 @@ def get_jobs(search: str = ""):
             {"area": {"$regex": search, "$options": "i"}}
         ]
         
+    if shifts:
+        allowed_shifts = [s.strip() for s in shifts.split(",") if s.strip()]
+        if allowed_shifts:
+            if "$and" not in query:
+                query["$and"] = []
+            for s in allowed_shifts:
+                query["$and"].append({"shift_type": {"$regex": re.compile(rf"\b{s}\b", re.IGNORECASE)}})
+            
+    if shop_type != "All Types":
+        query["shop_type"] = shop_type
+        
+    if min_salary > 0:
+        query["salary_per_day"] = {"$gte": min_salary}
+        
+    # Distance filter using the pre-generated max_distance_km field
+    if distance > 0:
+        query["max_distance_km"] = {"$lte": distance}
+        
     query["status"] = {"$ne": "closed"} # Filter out closed jobs
         
-    jobs_cursor = jobs_col.find(query).sort("created_at", -1).limit(50)
+    total_count = jobs_col.count_documents(query)
+    jobs_cursor = jobs_col.find(query).sort("created_at", -1).skip(skip).limit(limit)
     results = []
     for job in jobs_cursor:
         job["id"] = str(job["_id"])
@@ -167,8 +225,10 @@ def get_jobs(search: str = ""):
         if job.get("latitude") == "": job["latitude"] = None
         if job.get("longitude") == "": job["longitude"] = None
         
+        job["distance"] = float(job.get("max_distance_km", 0)) if job.get("max_distance_km") else 0.0
+        
         results.append(JobResponse(**job))
-    return results
+    return {"total_count": total_count, "jobs": results}
 
 @router.get("/jobs/{job_id}", response_model=JobResponse)
 def get_job(job_id: str):
@@ -189,6 +249,13 @@ def get_job(job_id: str):
     if job.get("latitude") == "": job["latitude"] = None
     if job.get("longitude") == "": job["longitude"] = None
     
+    job["distance"] = float(job.get("max_distance_km", 0)) if job.get("max_distance_km") else 0.0
+    
+    count = applications_col.count_documents({
+        "job_id": {"$in": [job["job_id"], str(job["_id"])]}
+    })
+    job["applicant_count"] = count
+    
     return JobResponse(**job)
 
 @router.post("/jobs")
@@ -197,13 +264,52 @@ def create_job(job: JobCreate):
     job_dict["job_id"] = str(uuid.uuid4())
     job_dict["created_at"] = datetime.now(timezone.utc)
     
-    # Mocking location details since they are not in the create schema but needed for recommendations/response
-    job_dict["latitude"] = 10.7867 # Palakkad
-    job_dict["longitude"] = 76.6548 # Palakkad
+    import random
+    import math
+
+    base_lat = 10.7867 # Palakkad center
+    base_lon = 76.6548
+    
+    # Generate random distance favoring 3-10km (as requested)
+    if random.random() < 0.7:
+        r_km = random.uniform(3.0, 10.0)
+    else:
+        r_km = random.uniform(0.5, 25.0)
+        
+    job_dict["max_distance_km"] = round(r_km, 1) # Store the "false generated" distance
+    
+    r_deg = r_km / 111.0 # 1 degree ~ 111km
+    theta = random.uniform(0, 2 * math.pi)
+    
+    # Mocking location details with radial spread
+    final_lat = base_lat + r_deg * math.sin(theta)
+    final_lon = base_lon + (r_deg * math.cos(theta)) / math.cos(math.radians(base_lat))
+    job_dict["latitude"] = final_lat
+    job_dict["longitude"] = final_lon
+    
+    # Critical: MongoDB 2dsphere spatial index requires formatted GeoJSON
+    job_dict["location"] = {
+        "type": "Point",
+        "coordinates": [final_lon, final_lat]
+    }
+    
     job_dict["shop_name"] = "Shop " + job_dict["retailer_id"][-4:] # fallback name
     job_dict["area"] = "Palakkad" # fallback area
+    job_dict["source"] = "retailer_created" # tag for fast recommender re-indexing at startup
     
     result = jobs_col.insert_one(job_dict)
+    
+    # Dynamically inject into ML matrix active memory
+    try:
+        from backend.app.recommender import add_new_job_to_recommender
+        # make a copy to ensure _id obj isn't mangled by memory storage
+        mem_job = job_dict.copy()
+        if "_id" in mem_job:
+            del mem_job["_id"]
+        add_new_job_to_recommender(mem_job)
+    except Exception as e:
+        print(f"Warning: Failed to index new job to ML models: {e}")
+        
     return {"status": "success", "job_id": job_dict["job_id"], "id": str(result.inserted_id)}
 
 
@@ -256,7 +362,7 @@ def update_shop_profile(user_id: str, profile: ShopProfileUpdate):
             return {"status": "success", "message": "Nothing to update"}
             
         update_query = {}
-        for key in ["owner_name", "shop_name", "shop_type", "location"]:
+        for key in ["owner_name", "shop_name", "shop_type", "location", "phone_no"]:
             if key in data:
                 update_query[key] = data.pop(key)
         
@@ -319,8 +425,41 @@ def update_retailer_password(user_id: str, payload: StudentPasswordUpdate):
 #                 JOB APPLICATIONS ROUTES
 # ---------------------------------------------------------
 
+import asyncio
+import random
+
+async def simulate_dataset_bot_decision(application_id: str, student_id: str, job: dict):
+    # Wait 8 seconds to seamlessly emulate employer review hesitation
+    await asyncio.sleep(8) 
+    
+    decision = "accepted" if random.random() < 0.65 else "rejected"
+    now_iso = datetime.now(timezone.utc).isoformat()
+    
+    from bson.objectid import ObjectId
+    applications_col.update_one(
+        {"_id": ObjectId(application_id)},
+        {"$set": {"status": decision}}
+    )
+    
+    title = "Application Accepted!" if decision == "accepted" else "Application Rejected"
+    
+    if decision == "accepted":
+        shop_email = f"manager@{job.get('shop_name', 'shop').replace(' ', '').replace('+', '').lower()}.com"
+        msg = f"Congratulations! Your application for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} has been accepted.\n\nContact the Manager at 9876543210 or {shop_email} to proceed!"
+    else:
+        msg = f"Sorry, you were not selected for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} this time."
+           
+    messages_col.insert_one({
+        "recipient_id": student_id,
+        "job_id": job.get("job_id"),
+        "title": title,
+        "message": msg,
+        "read": False,
+        "created_at": now_iso
+    })
+
 @router.post("/jobs/apply")
-def apply_for_job(application: JobApplicationCreate):
+def apply_for_job(application: JobApplicationCreate, background_tasks: BackgroundTasks):
     try:
         # Find the job first to get its normalized IDs
         job = jobs_col.find_one({"job_id": application.job_id})
@@ -364,7 +503,7 @@ def apply_for_job(application: JobApplicationCreate):
             "applied_at": datetime.now(timezone.utc).isoformat()
         }
         
-        applications_col.insert_one(app_doc)
+        app_result = applications_col.insert_one(app_doc)
         
         # Notify Retailer about new application
         messages_col.insert_one({
@@ -375,6 +514,10 @@ def apply_for_job(application: JobApplicationCreate):
             "read": False,
             "created_at": app_doc["applied_at"]
         })
+        
+        # Trigger Simulated Bot hook if the retailer is the phantom dataset owner
+        if retailer_id == "admin_sys":
+            background_tasks.add_task(simulate_dataset_bot_decision, str(app_result.inserted_id), str(student["_id"]), job)
         
         return {"status": "success", "message": "Application submitted successfully"}
     except Exception as e:
@@ -459,6 +602,16 @@ def update_application_status(application_id: str, status: dict):
             raise HTTPException(status_code=400, detail="Invalid status")
             
         # 1. Update the application status
+        if new_status == "accepted":
+            # Check if job is already full first!
+            app = applications_col.find_one({"_id": ObjectId(application_id)})
+            if not app:
+                raise HTTPException(status_code=404, detail="Application not found")
+            
+            job = jobs_col.find_one({"$or": [{"job_id": app.get("job_id")}, {"_id": ObjectId(app.get("job_id")) if len(app.get("job_id", "")) == 24 else None}]})
+            if job and job.get("status") == "closed":
+                 raise HTTPException(status_code=400, detail="This job is already filled and closed.")
+
         result = applications_col.update_one(
             {"_id": ObjectId(application_id)},
             {"$set": {"status": new_status}}
@@ -470,35 +623,68 @@ def update_application_status(application_id: str, status: dict):
         if new_status == "accepted":
             # get the updated application to find the job_id
             updated_app = applications_col.find_one({"_id": ObjectId(application_id)})
-            job_id = updated_app.get("job_id")
+            job_id_from_app = updated_app.get("job_id")
             
-            # get job details
-            job = jobs_col.find_one({"job_id": job_id})
+            # get job details (checking both possibilities for ID)
+            job = jobs_col.find_one({"$or": [
+                {"job_id": job_id_from_app},
+                {"_id": ObjectId(job_id_from_app) if len(job_id_from_app or "") == 24 else ObjectId()}
+            ]})
+            
             now_iso = datetime.now(timezone.utc).isoformat()
             
             if job:
+                job_id_canonical = job.get("job_id", str(job["_id"]))
+                
+                # Get the true retailer identity
+                retailer = users_col.find_one({"_id": ObjectId(updated_app.get("actual_retailer_id")), "role": "retailer"})
+                contact_info = ""
+                if retailer:
+                    r_name = retailer.get('owner_name', 'the Manager')
+                    r_phone = retailer.get('phone_no', 'their number')
+                    r_email = retailer.get('email', 'their email')
+                    contact_info = f"\n\nContact {r_name} at {r_phone} or {r_email} to proceed!"
+                    
                 # notify the accepted student
                 messages_col.insert_one({
                     "recipient_id": updated_app.get("student_id"),
-                    "job_id": job_id,
+                    "job_id": job_id_canonical,
                     "title": "Application Accepted!",
-                    "message": f"Congratulations! Your application for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} has been accepted.",
+                    "message": f"Congratulations! Your application for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} has been accepted.{contact_info}",
                     "read": False,
                     "created_at": now_iso
                 })
                 
-                openings = job.get("openings", 1)
+                # Support both modern 'openings' and legacy 'number_of_openings' fields
+                openings = job.get("openings", job.get("number_of_openings"))
                 
-                # count how many accepted apps exist for this job
-                accepted_count = applications_col.count_documents({"job_id": job_id, "status": "accepted"})
+                # Treat None or 0 openings as unlimited — never auto-close
+                if openings is None or openings <= 0:
+                    openings = float('inf')
+                
+                # count how many accepted apps exist for this job (checking both UUID and ObjectId strings)
+                accepted_count = applications_col.count_documents({
+                    "job_id": {"$in": [job.get("job_id"), str(job["_id"])]}, 
+                    "status": "accepted"
+                })
                 
                 # If we have reached or exceeded the required openings
                 if accepted_count >= openings:
-                    # a) Close the job
-                    jobs_col.update_one({"job_id": job_id}, {"$set": {"status": "closed"}})
+                    # a) Close the job in DB
+                    jobs_col.update_one({"_id": job["_id"]}, {"$set": {"status": "closed"}})
                     
-                    # b) Reject all pending applications
-                    pending_apps = list(applications_col.find({"job_id": job_id, "status": "pending"}))
+                    # b) Sync with Recommender memory
+                    try:
+                        from backend.app.recommender import mark_job_as_closed_in_recommender
+                        mark_job_as_closed_in_recommender(job_id_canonical)
+                    except Exception as e:
+                        print(f"Warning: Recommender sync failed: {e}")
+                    
+                    # c) Reject all remaining pending applications (across both ID formats)
+                    pending_apps = list(applications_col.find({
+                        "job_id": {"$in": [job.get("job_id"), str(job["_id"])]}, 
+                        "status": "pending"
+                    }))
                     
                     if pending_apps:
                         pending_ids = [app["_id"] for app in pending_apps]
@@ -507,14 +693,14 @@ def update_application_status(application_id: str, status: dict):
                             {"$set": {"status": "rejected"}}
                         )
                         
-                        # c) Send Inbox notification to rejected students
+                        # d) Send Inbox notification to rejected students
                         messages_to_insert = []
                         for app in pending_apps:
                             messages_to_insert.append({
                                 "recipient_id": app["student_id"],
-                                "job_id": job_id,
-                                "title": "Application Update",
-                                "message": f"Sorry, all openings for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} have been filled. You were not selected this time.",
+                                "job_id": job_id_canonical,
+                                "title": "Application Rejected",
+                                "message": f"Sorry, you were not selected for the {job.get('job_title', 'Job')} role at {job.get('shop_name', 'the shop')} this time.",
                                 "read": False,
                                 "created_at": now_iso
                             })
@@ -618,6 +804,18 @@ def mark_message_read(message_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.put("/messages/bulk-read/{user_id}")
+def bulk_mark_messages_read(user_id: str, title_contains: str = ""):
+    """Mark all unread messages for a user as read, optionally filtered by title keyword."""
+    try:
+        query = {"recipient_id": user_id, "read": False}
+        if title_contains:
+            query["title"] = {"$regex": title_contains, "$options": "i"}
+        result = messages_col.update_many(query, {"$set": {"read": True}})
+        return {"status": "success", "dismissed": result.modified_count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/student/applications/{user_id}")
 def get_student_applications(user_id: str):
     try:
@@ -659,6 +857,26 @@ def get_student_applications(user_id: str):
                 a["salary"] = job.get("salary_per_day", "")
                 a["location"] = job.get("area", "")
                 a["shift"] = job.get("shift_type", "")
+                
+                # Fetch Contact details if Accepted!
+                if a["status"] == "accepted":
+                    retailer_id = a.get("actual_retailer_id")
+                    retailer = None
+                    if retailer_id and retailer_id != "admin_sys":
+                        try:
+                            retailer = users_col.find_one({"_id": ObjectId(retailer_id), "role": "retailer"})
+                        except:
+                            pass
+                    
+                    if retailer:
+                        a["retailer_name"] = retailer.get("owner_name", "the Manager")
+                        a["retailer_phone"] = retailer.get("phone_no", "their number")
+                        a["retailer_email"] = retailer.get("email", "their email")
+                    else:
+                        a["retailer_name"] = "the Manager"
+                        a["retailer_phone"] = "9876543210"
+                        a["retailer_email"] = f"manager@{a['shop_name'].replace(' ', '').replace('+', '').lower()}.com"
+                        
             else:
                 # Fallback if job was deleted or missing after both lookups
                 a["job_title"] = "Job No Longer Available"
