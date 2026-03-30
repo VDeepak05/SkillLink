@@ -18,6 +18,7 @@ app.add_middleware(
 )
 
 app.include_router(router, prefix="/api")
+app.include_router(router)
 # Performance Middleware
 # ---------------------------
 @app.middleware("http")
@@ -34,6 +35,7 @@ async def add_process_time_header(request: Request, call_next):
 
 @app.get("/api")
 @app.get("/api/")
+@app.get("/")
 
 def root():
     return {"message": "Backend is running"}
