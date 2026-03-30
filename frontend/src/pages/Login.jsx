@@ -171,7 +171,7 @@ const Login = () => {
             }
         } catch (error) {
             console.error(error);
-            setErrorMsg("An error occurred during authentication.");
+            setErrorMsg(`An error occurred during authentication: ${error.message}`);
         }
         setLoading(false);
     };
