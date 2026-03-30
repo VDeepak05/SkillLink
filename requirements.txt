@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+bcrypt
+pydantic
+pymongo
+python-dotenv
+python-multipart
+numpy
+scipy
+scikit-learn

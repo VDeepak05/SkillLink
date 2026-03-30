@@ -197,9 +197,10 @@ def recommend_jobs(profile, evaluation_mode=False, weights=None, train_logs=None
 
         lat = profile.get("latitude")
         lon = profile.get("longitude")
-        max_distance = profile.get("max_distance_km")
+        max_dist_threshold = profile.get("max_distance_km")
 
-        if lat and lon and max_distance:
+        if lat and lon and max_dist_threshold:
+            # Real Geospatial Filter (if coordinates exist)
             pipeline = [
                 {
                     "$geoNear": {
@@ -208,7 +209,7 @@ def recommend_jobs(profile, evaluation_mode=False, weights=None, train_logs=None
                             "coordinates": [lon, lat]
                         },
                         "distanceField": "distance",
-                        "maxDistance": max_distance * 1000,
+                        "maxDistance": max_dist_threshold * 1000,
                         "spherical": True
                     }
                 },
@@ -222,6 +223,18 @@ def recommend_jobs(profile, evaluation_mode=False, weights=None, train_logs=None
             geo_filtered = {doc["job_id"] for doc in results}
             for doc in results:
                 distance_map[doc["job_id"]] = doc["distance"] / 1000
+        elif max_dist_threshold:
+            # Fallback Distance Filter (using the pre-generated field)
+            # This satisfies the user's request to use the "false generated" distances
+            geo_filtered = {
+                job["job_id"] for job in jobs 
+                if float(job.get("max_distance_km", 0)) <= max_dist_threshold
+            }
+            if not geo_filtered:
+                return [], 0
+            for jid in geo_filtered:
+                job = job_lookup.get(jid)
+                distance_map[jid] = float(job.get("max_distance_km", 0))
 
     # -----------------------------------------------------
     # CONTENT

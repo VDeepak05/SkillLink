@@ -23,6 +23,7 @@ const StudentSetup = () => {
     const navigate = useNavigate();
     const [selectedSkills, setSelectedSkills] = useState([]);
     const [saving, setSaving] = useState(false);
+    const [darkMode, setDarkMode] = useState(true);
 
     useEffect(() => {
         if (!user || user.role !== "student") {
@@ -59,11 +60,12 @@ const StudentSetup = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-100 dark:from-slate-900 dark:via-gray-900 dark:to-slate-800 flex items-center justify-center p-6 transition-colors duration-700">
-            <div className="max-w-2xl w-full bg-white/80 dark:bg-white/10 backdrop-blur-2xl p-10 rounded-3xl shadow-2xl border border-white/20 dark:border-white/10">
+        <div className={`min-h-screen transition-all duration-700 flex items-center justify-center p-6
+            ${darkMode ? 'dark-animated-gradient' : 'bg-gradient-to-br from-emerald-50 via-white to-green-100'}`}>
+            <div className="max-w-2xl w-full bg-white/80 dark:bg-white/5 backdrop-blur-2xl p-10 rounded-3xl shadow-2xl border border-white/20 dark:border-white/5">
                 <div className="text-center mb-10">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Welcome to SkiLink! 🎉</h1>
-                    <p className="text-gray-600 dark:text-gray-300">Let's set up your profile. Select the skills you possess so retailers know what you bring to the table.</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Welcome to SkillLink! 🎉</h1>
+                    <p className="text-gray-600 dark:text-emerald-100/70">Let's set up your profile. Select the skills you possess so retailers know what you bring to the table.</p>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
@@ -73,10 +75,10 @@ const StudentSetup = () => {
                             <button
                                 key={skill}
                                 onClick={() => toggleSkill(skill)}
-                                className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 text-sm font-bold text-center h-24
+                                className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 text-sm font-bold text-center h-24 focus:outline-none focus:ring-2 focus:ring-emerald-500/40
                                     ${isSelected
                                         ? "bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-md transform scale-105"
-                                        : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-emerald-300 dark:hover:border-emerald-600"
+                                        : "bg-white/50 dark:bg-white/5 border-gray-100 dark:border-white/5 text-gray-600 dark:text-emerald-100/60 hover:border-emerald-300 dark:hover:border-emerald-500/50"
                                     }`}
                             >
                                 {isSelected ? <Check size={20} className="text-emerald-500" /> : <span className="text-xl">+</span>}

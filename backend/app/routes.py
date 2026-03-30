@@ -207,6 +207,10 @@ def get_jobs(search: str = "", skip: int = 0, limit: int = 20,
     if min_salary > 0:
         query["salary_per_day"] = {"$gte": min_salary}
         
+    # Distance filter using the pre-generated max_distance_km field
+    if distance > 0:
+        query["max_distance_km"] = {"$lte": distance}
+        
     query["status"] = {"$ne": "closed"} # Filter out closed jobs
         
     total_count = jobs_col.count_documents(query)
@@ -266,8 +270,14 @@ def create_job(job: JobCreate):
     base_lat = 10.7867 # Palakkad center
     base_lon = 76.6548
     
-    # Generate random distance between 0.5km and 25km
-    r_km = random.uniform(0.5, 25.0)
+    # Generate random distance favoring 3-10km (as requested)
+    if random.random() < 0.7:
+        r_km = random.uniform(3.0, 10.0)
+    else:
+        r_km = random.uniform(0.5, 25.0)
+        
+    job_dict["max_distance_km"] = round(r_km, 1) # Store the "false generated" distance
+    
     r_deg = r_km / 111.0 # 1 degree ~ 111km
     theta = random.uniform(0, 2 * math.pi)
     

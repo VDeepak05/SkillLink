@@ -4,7 +4,7 @@ import { GraduationCap, Store, Sun, Moon, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import JobHuntImage from "../images/JobHunt.svg";
-import SkillLinkIcon from "../images/SkillLinkIcon.png";
+import SkillLinkIcon from "../images/SkiLinkLogoNew.png";
 import SkillLinkText from "../images/SkillLinktext.png";
 import FormDatePicker from "../components/FormDatePicker";
 
@@ -193,38 +193,34 @@ const Login = () => {
                                     initial={{ x: -80, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
                                     transition={{ duration: 1 }}
-                                    className="flex-1 flex justify-end items-center md:pr-16 lg:pr-20"
+                                    className="flex-1 flex justify-end items-center md:pr-4 lg:pr-10"
                                 >
                                     <motion.img
                                         src={JobHuntImage}
                                         alt="Job Hunt Illustration"
-                                        className={`w-48 md:w-56 lg:w-64 object-contain transition-all duration-500 ${darkMode ? 'drop-shadow-[0_4px_12px_rgba(255,255,255,0.1)]' : 'drop-shadow-2xl'}`}
+                                        className={`w-48 md:w-56 lg:w-64 object-contain transition-all duration-500 ${darkMode ? 'drop-shadow-[0_4px_12px_rgba(255,255,255,0.1)]' : 'drop-shadow-2xl'} md:translate-x-16`}
                                         animate={{ y: [0, -12, 0] }}
                                         transition={{ duration: 5, repeat: Infinity }}
                                     />
                                 </motion.div>
 
                                 {/* Center Divider */}
-                                <div className={`hidden md:block w-px h-64 transition-all duration-500 ${darkMode ? 'bg-gradient-to-b from-transparent via-emerald-500/50 to-transparent' : 'bg-gradient-to-b from-transparent via-emerald-600/30 to-transparent'}`}></div>
+                                <div className={`hidden md:block w-px h-64 md:ml-34 transition-all duration-500 ${darkMode ? 'bg-gradient-to-b from-transparent via-emerald-500/50 to-transparent' : 'bg-gradient-to-b from-transparent via-emerald-600/30 to-transparent'}`}></div>
 
                                 {/* Right Logo */}
                                 <motion.div
                                     initial={{ x: 80, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
                                     transition={{ duration: 1 }}
-                                    className="flex-1 flex flex-col items-center justify-center md:pr-64"
+                                    className="flex-1 flex flex-col items-center justify-center md:pr-45"
                                 >
                                     <div className="flex flex-col items-center gap-4 mt-16">
-                                        <img 
-                                            src={SkillLinkIcon} 
-                                            alt="SkillLink Icon" 
-                                            className={`h-28 md:h-36 lg:h-44 w-auto object-contain transition-all duration-500 drop-shadow-lg ${darkMode ? 'brightness-0 invert' : ''}`}
+                                        <img
+                                            src={SkillLinkIcon}
+                                            alt="SkillLink Icon"
+                                            className={`h-28 md:h-36 lg:h-44 w-auto object-contain transition-all duration-500 drop-shadow-lg ${darkMode ? 'brightness-0 invert' : ''} md:mr-16`}
                                         />
-                                        <img 
-                                            src={SkillLinkText} 
-                                            alt="SkillLink Catchphrase" 
-                                            className={`h-12 md:h-16 w-auto object-contain transition-all duration-500 drop-shadow-sm ${darkMode ? 'brightness-0 invert' : ''}`}
-                                        />
+
                                         <p className={`mt-6 whitespace-nowrap text-lg md:text-xl font-medium tracking-wide transition-colors duration-300 ${darkMode ? 'text-gray-300' : 'text-emerald-800'}`}>
                                             Connect, work, and earn while you learn.
                                         </p>

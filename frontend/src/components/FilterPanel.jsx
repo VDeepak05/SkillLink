@@ -45,14 +45,14 @@ const FilterPanel = ({
                     <input
                         type="range"
                         min="1"
-                        max="20"
+                        max="25"
                         value={maxDistance}
                         onChange={(e) => setMaxDistance(parseInt(e.target.value))}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-olive-500 hover:accent-olive-600"
                     />
                     <div className="flex justify-between text-xs text-gray-400 mt-2 font-medium">
                         <span>1km</span>
-                        <span>20km</span>
+                        <span>25km</span>
                     </div>
                 </div>
 
