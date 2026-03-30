@@ -4,7 +4,8 @@ import { GraduationCap, Store, Sun, Moon, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import JobHuntImage from "../images/JobHunt.svg";
-import SkillLinkLogoProject from "../images/SkillLinkLogoProject.png";
+import SkillLinkIcon from "../images/SkillLinkIcon.png";
+import SkillLinkText from "../images/SkillLinktext.png";
 // import DatePicker from "react-datepicker";
 // import "react-datepicker/dist/react-datepicker.css";
 
@@ -185,7 +186,7 @@ const Login = () => {
                                     initial={{ x: -80, opacity: 0 }}
                                     animate={{ x: 0, opacity: 1 }}
                                     transition={{ duration: 1 }}
-                                    className="flex-1 flex justify-end items-center md:pr-8"
+                                    className="flex-1 flex justify-end items-center md:pr-16 lg:pr-20"
                                 >
                                     <motion.img
                                         src={JobHuntImage}
@@ -206,15 +207,18 @@ const Login = () => {
                                     transition={{ duration: 1 }}
                                     className="flex-1 flex flex-col items-center md:items-start justify-center md:pl-8"
                                 >
-                                    <img 
-                                        src={SkillLinkLogoProject} 
-                                        alt="SkillLink Logo" 
-                                        className={`h-32 md:h-40 lg:h-48 w-auto object-contain transition-all duration-500 drop-shadow-lg ${darkMode ? 'brightness-0 invert' : ''}`}
-                                    />
-                                    {/* Subtitle text below the logo like in the reference */}
-                                    <p className={`mt-6 text-lg md:text-xl font-medium tracking-wide transition-colors duration-300 ${darkMode ? 'text-gray-300' : 'text-emerald-800'}`}>
-                                        Connect, work, and earn while you learn.
-                                    </p>
+                                    <div className="flex flex-col items-center gap-4 mt-16">
+                                        <img 
+                                            src={SkillLinkIcon} 
+                                            alt="SkillLink Icon" 
+                                            className={`h-28 md:h-36 lg:h-44 w-auto object-contain transition-all duration-500 drop-shadow-lg ${darkMode ? 'brightness-0 invert' : ''}`}
+                                        />
+                                        <img 
+                                            src={SkillLinkText} 
+                                            alt="SkillLink Catchphrase" 
+                                            className={`h-12 md:h-16 w-auto object-contain transition-all duration-500 drop-shadow-sm ${darkMode ? 'brightness-0 invert' : ''}`}
+                                        />
+                                    </div>
                                 </motion.div>
                             </div>
 
