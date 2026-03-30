@@ -32,8 +32,8 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
+@app.get("/api")
+@app.get("/api/")
 
-
-@app.get("/")
 def root():
     return {"message": "Backend is running"}
