@@ -4,6 +4,7 @@ import { Bell, Check, Clock, XCircle, Search, Mail, Building2 } from "lucide-rea
 import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import API_BASE_URL from "../api";
 
 const Inbox = () => {
     const { user } = useAuth();
@@ -28,7 +29,7 @@ const Inbox = () => {
 
     const fetchMessages = async () => {
         try {
-            const res = await fetch(`http://localhost:8000/messages/${user.id}`);
+            const res = await fetch(`${API_BASE_URL}/messages/${user.id}`);
             if (res.ok) {
                 const data = await res.json();
                 setMessages(data);
@@ -61,7 +62,7 @@ const Inbox = () => {
         setMessages(prev => prev.map(m => m.id === messageId ? { ...m, read: true } : m));
 
         try {
-            await fetch(`http://localhost:8000/messages/${messageId}/read`, {
+            await fetch(`${API_BASE_URL}/messages/${messageId}/read`, {
                 method: "PUT"
             });
 

@@ -4,6 +4,7 @@ import JobCard from "../components/JobCard";
 import { Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import API_BASE_URL from "../api";
 
 const Home = () => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -43,8 +44,8 @@ const Home = () => {
             }).toString();
 
             const endpoint = user && user.role === 'student'
-                ? `http://localhost:8000/recommend/${user.id}?${queryParams}`
-                : `http://localhost:8000/jobs?${queryParams}`;
+                ? `${API_BASE_URL}/recommend/${user.id}?${queryParams}`
+                : `${API_BASE_URL}/jobs?${queryParams}`;
 
             const res = await fetch(endpoint, { cache: 'no-store' });
             const data = await res.json();
@@ -121,13 +122,13 @@ const Home = () => {
         const fetchUserData = async () => {
             if (user && user.role === 'student') {
                 try {
-                    const appsRes = await fetch(`http://localhost:8000/student/applications/${user.id}`, { cache: 'no-store' });
+                    const appsRes = await fetch(`${API_BASE_URL}/student/applications/${user.id}`, { cache: 'no-store' });
                     if (appsRes.ok) {
                         const appsData = await appsRes.json();
                         setAppliedJobIds(new Set(appsData.applications.map(a => a.job_id)));
                     }
 
-                    const wishlistRes = await fetch(`http://localhost:8000/student/wishlist/${user.id}`, { cache: 'no-store' });
+                    const wishlistRes = await fetch(`${API_BASE_URL}/student/wishlist/${user.id}`, { cache: 'no-store' });
                     if (wishlistRes.ok) {
                         const wishlistData = await wishlistRes.json();
                         setSavedJobIds(new Set(wishlistData.wishlist.map(j => j.job_id || j.id)));

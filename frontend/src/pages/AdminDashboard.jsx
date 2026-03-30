@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, CheckCircle, XCircle, Search, RefreshCw, LogOut } from "lucide-react";
+import API_BASE_URL from "../api";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,7 +28,7 @@ const AdminDashboard = () => {
     const fetchRetailers = async () => {
         setLoading(true);
         try {
-            const res = await fetch("http://localhost:8000/admin/retailers");
+            const res = await fetch(`${API_BASE_URL}/admin/retailers`);
             if (res.ok) {
                 const data = await res.json();
                 setRetailers(data.retailers || []);
@@ -46,7 +47,7 @@ const AdminDashboard = () => {
         if (!window.confirm(`Are you sure you want to approve ${shopName}?`)) return;
 
         try {
-            const res = await fetch(`http://localhost:8000/admin/retailers/${id}/verify`, {
+            const res = await fetch(`${API_BASE_URL}/admin/retailers/${id}/verify`, {
                 method: "PUT"
             });
             if (res.ok) {

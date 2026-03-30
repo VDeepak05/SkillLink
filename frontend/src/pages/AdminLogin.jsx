@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Shield, Lock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
+import API_BASE_URL from "../api";
 
 const AdminLogin = () => {
     const navigate = useNavigate();
@@ -27,7 +28,7 @@ const AdminLogin = () => {
         setErrorMsg("");
 
         try {
-            const res = await fetch("http://localhost:8000/admin/login", {
+            const res = await fetch(`${API_BASE_URL}/admin/signin`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(credentials)

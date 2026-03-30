@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { Heart, Search, Loader2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import API_BASE_URL from '../api';
 import JobCard from '../components/JobCard';
 
 const StudentWishlist = () => {
@@ -28,7 +29,7 @@ const StudentWishlist = () => {
         const fetchWishlist = async () => {
             if (!user) return;
             try {
-                const res = await fetch(`http://localhost:8000/student/wishlist/${user.id}`);
+                const res = await fetch(`${API_BASE_URL}/student/wishlist/${user.id}`);
                 const data = await res.json();
                 if (res.ok) {
                     // Map data to match JobCard expectations if needed

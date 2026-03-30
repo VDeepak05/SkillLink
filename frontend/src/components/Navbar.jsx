@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import API_BASE_URL from '../api';
 import SkillLinkLogo from '../images/SkiLinkLogoNew.png';
 
 const Navbar = () => {
@@ -16,7 +17,7 @@ const Navbar = () => {
         if (!user || (!user.id && !user.user_id)) return;
         const userId = user.id || user.user_id;
         try {
-            const res = await fetch(`http://localhost:8000/messages/${userId}`);
+            const res = await fetch(`${API_BASE_URL}/messages/${userId}`);
             if (res.ok) {
                 const data = await res.json();
                 const unread = Array.isArray(data) ? data.filter(msg => !msg.read).length : 0;

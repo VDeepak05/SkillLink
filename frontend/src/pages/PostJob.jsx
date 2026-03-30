@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, Check } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import API_BASE_URL from '../api';
 
 const SKILL_OPTIONS = [
     "Billing & Cashier", "Customer Service", "Inventory Management",
@@ -62,7 +63,7 @@ const PostJob = () => {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:8000/jobs', {
+            const res = await fetch(`${API_BASE_URL}/jobs/post`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

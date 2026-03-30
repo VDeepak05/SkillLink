@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, Store, Sun, Moon, ArrowLeft } from "lucide-react";
+import { GraduationCap, Store, Sun, Moon, ArrowLeft, User, Lock, Mail, Phone, MapPin, Calendar, Briefcase, Camera, ArrowRight, CheckCircle, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
+import API_BASE_URL from "../api";
 import JobHuntImage from "../images/JobHunt.svg";
 import SkillLinkIcon from "../images/SkiLinkLogoNew.png";
 import SkillLinkText from "../images/SkillLinktext.png";
@@ -93,8 +94,8 @@ const Login = () => {
         setErrorMsg("");
 
         const endpoint = isLogin
-            ? "http://localhost:8000/auth/signin"
-            : `http://localhost:8000/auth/signup/${activeRole}`;
+            ? `${API_BASE_URL}/auth/signin`
+            : `${API_BASE_URL}/auth/signup/${activeRole}`;
 
         let payload = {};
 

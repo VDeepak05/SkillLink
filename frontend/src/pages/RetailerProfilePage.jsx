@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Store, User, Mail, MapPin, Hash, Phone, Check, Save, Lock, Edit2, X, AlertCircle, Loader2, CheckCircle2, Sun, Moon, Settings } from "lucide-react";
+import API_BASE_URL from '../api';
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -44,7 +45,7 @@ const RetailerProfilePage = () => {
         const fetchProfile = async () => {
             try {
                 // We use the new /retailer/profile GET route
-                const res = await fetch(`http://localhost:8000/retailer/profile/${user.id}`);
+                const res = await fetch(`${API_BASE_URL}/retailer/profile/${user.id}`);
                 if (res.ok) {
                     const data = await res.json();
                     setProfile(data.profile);
@@ -67,7 +68,7 @@ const RetailerProfilePage = () => {
         setProfileErrorMsgs("");
         setSavingProfile(true);
         try {
-            const res = await fetch(`http://localhost:8000/retailer/profile/${user.id}`, {
+            const res = await fetch(`${API_BASE_URL}/retailer/profile/${user.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

@@ -3,6 +3,7 @@ import { Plus, Users, ShoppingBag, Store, TrendingUp, Briefcase, CheckCircle, XC
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import API_BASE_URL from "../api";
 
 const RetailerDashboard = () => {
     const { user } = useAuth();
@@ -32,7 +33,7 @@ const RetailerDashboard = () => {
     // and fire a custom event so the Navbar badge re-polls immediately (no route change needed)
     useEffect(() => {
         if (expandedJobId && user) {
-            fetch(`http://localhost:8000/messages/bulk-read/${user.id}?title_contains=New Applicant`, {
+            fetch(`${API_BASE_URL}/messages/bulk-read/${user.id}?title_contains=New Applicant`, {
                 method: 'PUT'
             }).then(() => {
                 // Signal the Navbar to re-fetch its unread count
@@ -45,14 +46,14 @@ const RetailerDashboard = () => {
         setLoading(true);
         try {
             // Fetch jobs
-            const jobsRes = await fetch(`http://localhost:8000/retailer/jobs/${user.id}`);
+            const jobsRes = await fetch(`${API_BASE_URL}/retailer/jobs/${user.id}`);
             if (jobsRes.ok) {
                 const data = await jobsRes.json();
                 setJobs(data.jobs || []);
             }
 
             // Fetch applications
-            const appsRes = await fetch(`http://localhost:8000/retailer/applications/${user.id}`);
+            const appsRes = await fetch(`${API_BASE_URL}/retailer/applications/${user.id}`);
             if (appsRes.ok) {
                 const data = await appsRes.json();
                 setApplications(data.applications || []);
@@ -73,7 +74,7 @@ const RetailerDashboard = () => {
         e.preventDefault();
         setSaving(true);
         try {
-            const res = await fetch(`http://localhost:8000/retailer/profile/${user.id}`, {
+            const res = await fetch(`${API_BASE_URL}/retailer/profile/${user.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(profile)
@@ -91,7 +92,7 @@ const RetailerDashboard = () => {
 
     const handleAppStatus = async (appId, newStatus) => {
         try {
-            const res = await fetch(`http://localhost:8000/retailer/applications/${appId}`, {
+            const res = await fetch(`${API_BASE_URL}/retailer/applications/${appId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status: newStatus })
@@ -104,7 +105,7 @@ const RetailerDashboard = () => {
                 if (selectedApp && selectedApp.id === appId) {
                     // Update its status. If accepted, fetch full application data to get phone and email.
                     if (newStatus === 'accepted') {
-                        const appsRes = await fetch(`http://localhost:8000/retailer/applications/${user.id}`);
+                        const appsRes = await fetch(`${API_BASE_URL}/retailer/applications/${user.id}`);
                         if (appsRes.ok) {
                             const data = await appsRes.json();
                             setApplications(data.applications || []);

@@ -4,6 +4,7 @@ import { User, Mail, Phone, Calendar, BookOpen, Hash, Check, Save, Lock, Edit2, 
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import FormDatePicker from "../components/FormDatePicker";
+import API_BASE_URL from "../api";
 
 const SKILL_OPTIONS = [
     "Billing & Cashier", "Customer Service", "Inventory Management",
@@ -54,7 +55,7 @@ const StudentProfilePage = () => {
 
         const fetchProfile = async () => {
             try {
-                const res = await fetch(`http://localhost:8000/student/profile/${user.id}`);
+                const res = await fetch(`${API_BASE_URL}/student/profile/${user.id}`);
                 if (res.ok) {
                     const data = await res.json();
                     setProfile(data.profile);
@@ -99,7 +100,7 @@ const StudentProfilePage = () => {
 
         setSavingProfile(true);
         try {
-            const res = await fetch(`http://localhost:8000/student/profile/${user.id}`, {
+            const res = await fetch(`${API_BASE_URL}/student/profile/${user.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -136,7 +137,7 @@ const StudentProfilePage = () => {
     const handleSaveSkills = async () => {
         setSavingSkills(true);
         try {
-            const res = await fetch(`http://localhost:8000/student/profile/${user.id}`, {
+            const res = await fetch(`${API_BASE_URL}/student/profile/${user.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ skills: selectedSkills })
@@ -162,7 +163,7 @@ const StudentProfilePage = () => {
 
         setChangingPwd(true);
         try {
-            const res = await fetch(`http://localhost:8000/student/password/${user.id}`, {
+            const res = await fetch(`${API_BASE_URL}/student/profile/${user.id}/password`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })

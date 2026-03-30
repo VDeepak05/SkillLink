@@ -3,6 +3,7 @@ import { MapPin, Clock, Calendar, IndianRupee, Heart, CheckCircle, AlertCircle, 
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import API_BASE_URL from '../api';
 
 const JobCard = ({ job, isApplied = false, isSaved = false, darkMode = true }) => {
     const { user } = useAuth();
@@ -28,7 +29,7 @@ const JobCard = ({ job, isApplied = false, isSaved = false, darkMode = true }) =
         }
 
         try {
-            const res = await fetch('http://localhost:8000/student/wishlist/toggle', {
+            const res = await fetch(`${API_BASE_URL}/student/wishlist/toggle`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -71,7 +72,7 @@ const JobCard = ({ job, isApplied = false, isSaved = false, darkMode = true }) =
                 retailer_id: user.id
             };
 
-            const response = await fetch("http://localhost:8000/jobs/apply", {
+            const response = await fetch(`${API_BASE_URL}/jobs/apply`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)

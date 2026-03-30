@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Briefcase, MapPin, Clock, IndianRupee, ChevronRight, AlertCircle, CheckCircle2, XCircle, Loader2, User, Phone, Mail } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import API_BASE_URL from '../api';
 
 const StudentApplications = () => {
     const { user } = useAuth();
@@ -31,7 +32,7 @@ const StudentApplications = () => {
         const fetchApplications = async () => {
             if (!user) return;
             try {
-                const res = await fetch(`http://localhost:8000/student/applications/${user.id}`, { cache: 'no-store' });
+                const res = await fetch(`${API_BASE_URL}/student/applications/${user.id}`, { cache: 'no-store' });
                 const data = await res.json();
                 if (res.ok) {
                     setApplications(data.applications);
@@ -60,7 +61,7 @@ const StudentApplications = () => {
     // Auto-dismiss relevant inbox notifications when viewing an application's details
     useEffect(() => {
         if (user && selectedApp && (selectedApp.status === 'accepted' || selectedApp.status === 'rejected')) {
-            fetch(`http://localhost:8000/messages/bulk-read/${user.id}?title_contains=Application`, {
+            fetch(`${API_BASE_URL}/messages/bulk-read/${user.id}?title_contains=Application`, {
                 method: 'PUT'
             }).then(() => {
                 // Signal the Navbar to re-fetch its unread count

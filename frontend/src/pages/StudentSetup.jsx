@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, ArrowRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import API_BASE_URL from "../api";
 
 const SKILL_OPTIONS = [
     "Billing & Cashier",
@@ -42,7 +43,7 @@ const StudentSetup = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const res = await fetch(`http://localhost:8000/student/profile/${user.id}`, {
+            const res = await fetch(`${API_BASE_URL}/student/profile/${user.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ skills: selectedSkills })

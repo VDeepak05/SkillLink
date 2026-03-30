@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { MapPin, Clock, Calendar, IndianRupee, Briefcase, ArrowLeft, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import API_BASE_URL from '../api';
 
 const JobDetails = () => {
     const { id } = useParams();
@@ -29,7 +30,7 @@ const JobDetails = () => {
     useEffect(() => {
         const fetchJobData = async () => {
             try {
-                const res = await fetch(`http://localhost:8000/jobs/${id}`);
+                const res = await fetch(`${API_BASE_URL}/jobs/${id}`);
                 const data = await res.json();
                 const jobDetails = {
                     id: data.id,
@@ -52,14 +53,14 @@ const JobDetails = () => {
                 // Check application and wishlist status if user is student
                 if (user && user.role === 'student') {
                     // Check application
-                    const statusRes = await fetch(`http://localhost:8000/jobs/${data.job_id}/status/${user.id}`);
+                    const statusRes = await fetch(`${API_BASE_URL}/jobs/${data.job_id}/status/${user.id}`);
                     if (statusRes.ok) {
                         const statusData = await statusRes.json();
                         setApplied(statusData.applied);
                     }
 
                     // Check wishlist
-                    const wishlistRes = await fetch(`http://localhost:8000/student/wishlist/${user.id}`);
+                    const wishlistRes = await fetch(`${API_BASE_URL}/student/wishlist/${user.id}`);
                     if (wishlistRes.ok) {
                         const wishlistData = await wishlistRes.json();
                         const isSaved = wishlistData.wishlist.some(j => j.job_id === data.job_id || j.id === data.id);
@@ -83,7 +84,7 @@ const JobDetails = () => {
         }
 
         try {
-            const res = await fetch('http://localhost:8000/student/wishlist/toggle', {
+            const res = await fetch(`${API_BASE_URL}/student/wishlist/toggle`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -116,7 +117,7 @@ const JobDetails = () => {
         setApplying(true);
         try {
             // Log interaction
-            fetch('http://localhost:8000/log-interaction', {
+            fetch(`${API_BASE_URL}/log-interaction`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -127,7 +128,7 @@ const JobDetails = () => {
             }).catch(console.error);
 
             // Submit real application
-            const res = await fetch('http://localhost:8000/jobs/apply', {
+            const res = await fetch(`${API_BASE_URL}/jobs/apply`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
