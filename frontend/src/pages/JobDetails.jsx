@@ -13,12 +13,18 @@ const JobDetails = () => {
     const [applied, setApplied] = useState(false);
     const [saved, setSaved] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [darkMode, setDarkMode] = useState(true);
+    // Theme State
+    const [darkMode, setDarkMode] = useState(() => {
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        return saved !== "light"; // Default to dark
+    });
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem("theme");
-        setDarkMode(savedTheme !== "light");
-    }, []);
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        setDarkMode(saved !== "light");
+    }, [user]);
 
     useEffect(() => {
         const fetchJobData = async () => {
@@ -144,8 +150,15 @@ const JobDetails = () => {
         setApplying(false);
     };
 
-    if (loading) return <div className="text-center py-20 font-bold text-gray-500">Loading job details...</div>;
-    if (!job) return <div className="text-center py-20 font-bold text-red-500">Job not found.</div>;
+    if (loading) {
+        return (
+            <div className={`min-h-screen flex flex-col items-center justify-center gap-4 ${darkMode ? "dark-animated-gradient text-emerald-400" : "bg-white text-gray-500"}`}>
+                <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="font-bold text-lg">Loading job details...</p>
+            </div>
+        );
+    }
+    if (!job) return <div className={`min-h-screen flex items-center justify-center font-bold text-xl ${darkMode ? "dark-animated-gradient text-red-400" : "bg-white text-red-500"}`}>Job not found.</div>;
 
 
     return (

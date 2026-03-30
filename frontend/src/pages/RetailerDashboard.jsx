@@ -7,21 +7,18 @@ import { useAuth } from "../context/AuthContext";
 const RetailerDashboard = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [darkMode, setDarkMode] = useState(true);
-    const [activeTab, setActiveTab] = useState("overview"); // overview, profile
-
-    const [jobs, setJobs] = useState([]);
-    const [applications, setApplications] = useState([]);
-    const [expandedJobId, setExpandedJobId] = useState(null);
-    const [profile, setProfile] = useState({ description: "", website: "", instagram: "", facebook: "", logo_url: "" });
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [selectedApp, setSelectedApp] = useState(null);
+    // Theme State
+    const [darkMode, setDarkMode] = useState(() => {
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        return saved !== "light"; // Default to dark
+    });
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem("theme");
-        setDarkMode(savedTheme !== "light");
-    }, []);
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        setDarkMode(saved !== "light");
+    }, [user]);
 
     useEffect(() => {
         if (!user || user.role !== "retailer") {
@@ -127,7 +124,12 @@ const RetailerDashboard = () => {
     };
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center font-bold text-gray-500">Loading Dashboard...</div>;
+        return (
+            <div className={`min-h-screen flex flex-col items-center justify-center gap-4 ${darkMode ? "dark-animated-gradient text-emerald-400" : "bg-white text-gray-500"}`}>
+                <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="font-bold text-lg">Loading Dashboard...</p>
+            </div>
+        );
     }
 
     const pendingCount = applications.filter(a => a.status === 'pending').length;

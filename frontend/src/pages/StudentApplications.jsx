@@ -16,9 +16,16 @@ const StudentApplications = () => {
 
     // Theme State
     const [darkMode, setDarkMode] = useState(() => {
-        const saved = localStorage.getItem("theme");
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
         return saved !== "light"; // Default to dark theme
     });
+
+    useEffect(() => {
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        setDarkMode(saved !== "light");
+    }, [user]);
 
     useEffect(() => {
         const fetchApplications = async () => {
@@ -90,10 +97,10 @@ const StudentApplications = () => {
 
     if (loading) {
         return (
-            <div className="min-h-[80vh] flex items-center justify-center">
+            <div className={`min-h-[80vh] flex items-center justify-center ${darkMode ? "dark-animated-gradient" : "bg-white"}`}>
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="h-10 w-10 text-emerald-500 animate-spin" />
-                    <p className="text-gray-500 font-medium">Fetching your applications...</p>
+                    <p className={`${darkMode ? "text-emerald-400" : "text-gray-500"} font-medium`}>Fetching your applications...</p>
                 </div>
             </div>
         );

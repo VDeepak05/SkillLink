@@ -26,7 +26,8 @@
 
 body {
     font-family: var(--font-sans);
-    background-color: #0b120f; /* Deep Forest Black/Green */
+    background-color: #0b120f;
+    /* Deep Forest Black/Green */
     color: #e2e8f0;
 }
 
@@ -44,6 +45,7 @@ body {
     }
 }
 
+/* 🌌 Premium Dark Animated Gradient */
 .dark-animated-gradient {
     background: linear-gradient(-45deg,
             #0b120f,
@@ -54,7 +56,35 @@ body {
     animation: gradientShiftDark 18s ease infinite;
 }
 
-/* 🌌 Premium Dark Animated Gradient */
+/* 🧪 Premium Green Glass Utility */
+/* .premium-green-glass {
+    background: rgba(6, 95, 70, 0.005) !important;
+    /* Emerald 800-900 hybrid with 45% alpha */
+/*backdrop-filter: blur(24px) saturate(300%) !important;
+    border-bottom: 1.5px solid rgba(52, 211, 153, 0.3) !important;
+    box-shadow: 0 8px 32px 0 rgba(6, 78, 59, 0.37) !important;
+} */
+.premium-green-glass {
+    /* 💎 Deep Emerald 800 with 80% opacity - this makes it truly GREEN */
+    background: rgba(1, 65, 41, 0.9) !important;
+
+    /* ✨ Lower blur but higher saturation to keep the green deep and punchy */
+    backdrop-filter: blur(8px) saturate(200%) !important;
+
+    border-bottom: 2px solid rgba(16, 255, 129, 0.3) !important;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.7) !important;
+}
+
+
+.premium-green-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), transparent 60%),
+        linear-gradient(to right, rgba(16, 185, 129, 0.1), transparent 50%, rgba(16, 185, 129, 0.1));
+    pointer-events: none;
+    z-index: -1;
+}
 
 /* ==========================================================================
    React DatePicker Custom Aesthetic Theme
@@ -66,7 +96,8 @@ body {
 
 .react-datepicker {
     font-family: var(--font-sans) !important;
-    background-color: #1e293b !important; /* Slate 800 */
+    background-color: #1e293b !important;
+    /* Slate 800 */
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: 1.25rem !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
@@ -76,7 +107,8 @@ body {
 }
 
 .react-datepicker__header {
-    background-color: #111e1b !important; /* Very dark green/black */
+    background-color: #111e1b !important;
+    /* Very dark green/black */
     border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
     padding-top: 0 !important;
     border-top-left-radius: 1.25rem !important;
@@ -89,7 +121,8 @@ body {
     color: #fff !important;
     font-weight: 700 !important;
     font-size: 1.1rem !important;
-    display: none; /* Hide default header since we use renderCustomHeader */
+    display: none;
+    /* Hide default header since we use renderCustomHeader */
 }
 
 .react-datepicker__day-name {
@@ -121,7 +154,8 @@ body {
 
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
-    background: #10b981 !important; /* Emerald 500 */
+    background: #10b981 !important;
+    /* Emerald 500 */
     color: #ffffff !important;
     font-weight: 700 !important;
     box-shadow: 0 0 20px rgba(16, 185, 129, 0.4) !important;
@@ -155,6 +189,8 @@ body {
 
 /* Hide scrollbar for IE, Edge and Firefox */
 * {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
 }

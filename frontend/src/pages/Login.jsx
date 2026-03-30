@@ -45,7 +45,7 @@ const Login = () => {
 
     // Auto-Redirect if already logged in + Role Recovery
     useEffect(() => {
-        const savedTheme = localStorage.getItem("theme");
+        const savedTheme = localStorage.getItem("skilllink_theme_global");
         if (savedTheme === "light") {
             setDarkMode(false);
         } else {
@@ -77,7 +77,7 @@ const Login = () => {
     const toggleTheme = () => {
         const newMode = !darkMode;
         setDarkMode(newMode);
-        localStorage.setItem("theme", newMode ? "dark" : "light");
+        localStorage.setItem("skilllink_theme_global", newMode ? "dark" : "light");
     };
 
     const handleRoleSelect = (role) => {

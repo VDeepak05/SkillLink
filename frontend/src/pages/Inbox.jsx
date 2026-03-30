@@ -9,12 +9,18 @@ const Inbox = () => {
     const { user } = useAuth();
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [darkMode, setDarkMode] = useState(true);
-    const navigate = useNavigate();
+    // Theme State
+    const [darkMode, setDarkMode] = useState(() => {
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        return saved !== "light"; // Default to dark
+    });
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem("theme");
-        setDarkMode(savedTheme !== "light");
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        setDarkMode(saved !== "light");
+        
         if (user && user.id) {
             fetchMessages();
         }
@@ -69,10 +75,10 @@ const Inbox = () => {
 
     if (loading) {
         return (
-            <div className={`min-h-[60vh] flex items-center justify-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+            <div className={`min-h-[60vh] flex items-center justify-center ${darkMode ? "dark-animated-gradient text-emerald-400" : "bg-white text-gray-500"}`}>
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="font-bold">Loading inbox...</p>
+                    <p className="font-bold text-lg">Loading inbox...</p>
                 </div>
             </div>
         );

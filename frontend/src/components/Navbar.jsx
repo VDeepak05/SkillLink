@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, Mail } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import SkillLinkLogo from '../images/SkiLinkLogoNew.png';
 
@@ -62,15 +63,22 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
+        <nav className="premium-green-glass sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-20">
                     <div className="flex items-center">
-                        <Link to={isRetailer ? "/retailer" : "/jobs"} className="flex items-center gap-1">
-                            <img src={SkillLinkLogo} alt="SkiLink Logo" className="h-10 object-contain drop-shadow-md" />
-                            <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 text-transparent bg-clip-text">
-                                SkiLink
-                            </span>
+                        <Link to={isRetailer ? "/retailer" : "/jobs"} className="group relative flex items-center gap-2">
+                            <img src={SkillLinkLogo} alt="SkillLink Logo" className="h-10 object-contain transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 brightness-0 invert" />
+                            
+                            <div className="relative flex items-center h-full pt-1">
+                                <div className="flex text-2xl font-black tracking-tight">
+                                    <span className="transition-colors duration-500 text-white group-hover:text-emerald-400">Ski</span>
+                                    <span className="transition-colors duration-500 text-emerald-400 group-hover:text-white">Link</span>
+                                </div>
+                                
+                                {/* Dynamic Underline that follows the green part */}
+                                <div className="absolute -bottom-1 left-0 h-0.5 bg-emerald-400 transition-all duration-500 ease-out translate-x-[36px] w-[45px] group-hover:translate-x-0 group-hover:w-[36px]" />
+                            </div>
                         </Link>
                     </div>
 
@@ -80,9 +88,9 @@ const Navbar = () => {
                             <Link
                                 key={link.name}
                                 to={link.path}
-                                className={`text-sm font-medium transition-colors duration-200 ${location.pathname === link.path
-                                    ? 'text-olive-600'
-                                    : 'text-gray-500 hover:text-gray-900'
+                                className={`text-sm font-semibold tracking-wide transition-all duration-300 relative py-1 px-2 rounded-lg hover:bg-white/5 ${location.pathname === link.path
+                                    ? 'text-emerald-400 bg-emerald-500/10 shadow-[0_0_15px_rgba(52,211,153,0.1)]'
+                                    : 'text-gray-400 hover:text-white'
                                     }`}
                             >
                                 {link.name}
@@ -94,45 +102,45 @@ const Navbar = () => {
                                 <div className="flex items-center gap-4">
                                     <button
                                         onClick={() => navigate('/inbox')}
-                                        className="relative p-2 rounded-full hover:bg-gray-50 text-gray-500 hover:text-emerald-500 transition-colors"
+                                        className="relative p-2 rounded-xl bg-white/5 hover:bg-white/10 text-emerald-400 transition-all duration-300"
                                         title="Inbox"
                                     >
                                         <Mail className="h-5 w-5" />
                                         {/* Notification Badge */}
                                         {unreadCount > 0 && (
-                                            <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-500 rounded-full animate-pulse-slow">
+                                            <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-black leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-500 rounded-full animate-pulse shadow-lg border border-[#0b120f]">
                                                 {unreadCount > 99 ? '99+' : unreadCount}
                                             </span>
                                         )}
                                     </button>
                                     <button
                                         onClick={() => navigate(user.role === 'retailer' ? '/retailer/profile' : '/student/profile')}
-                                        className="text-right hidden lg:block hover:opacity-80 transition-opacity text-left"
+                                        className="hidden lg:flex flex-col items-end group"
                                     >
-                                        <p className="text-sm font-medium text-gray-900 hover:text-olive-600 transition-colors">{user.name}</p>
-                                        <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+                                        <p className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors tracking-tight">{user.name}</p>
+                                        <p className="text-[10px] text-emerald-500/70 uppercase tracking-tighter font-black">{user.role}</p>
                                     </button>
                                     <button
                                         onClick={handleLogout}
-                                        className="p-2 rounded-full hover:bg-gray-50 text-gray-500 hover:text-red-500 transition-colors"
+                                        className="p-2 rounded-xl bg-white/5 hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-all duration-300"
                                         title="Logout"
                                     >
                                         <LogOut className="h-5 w-5" />
                                     </button>
                                 </div>
                             ) : (
-                                <Link to="/" className="text-sm font-medium text-olive-600 hover:text-olive-700">
+                                <Link to="/" className="text-sm font-black text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20 transition-all">
                                     Login
                                 </Link>
                             )}
                         </div>
                     </div>
 
-                    {/* Mobile menu button */}
+                    {/* Mobile Menu Button */}
                     <div className="flex items-center md:hidden">
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none"
+                            className="inline-flex items-center justify-center p-2 rounded-xl text-emerald-400 bg-emerald-500/5 border border-emerald-500/20 hover:bg-emerald-500/10 transition-all"
                         >
                             {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                         </button>
@@ -140,56 +148,68 @@ const Navbar = () => {
                 </div>
             </div>
 
-            {/* Mobile Menu - Animated Slide Down */}
-            <div className={`md:hidden bg-white border-b border-gray-100 overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="px-4 py-4 space-y-2">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.name}
-                            to={link.path}
-                            className={`block px-4 py-3 rounded-xl text-base font-medium transition-colors ${location.pathname === link.path
-                                ? 'bg-olive-50 text-olive-700'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                }`}
-                            onClick={() => setIsOpen(false)}
-                        >
-                            {link.name}
-                        </Link>
-                    ))}
-                    {user ? (
-                        <>
-                            <button
-                                onClick={() => {
-                                    setIsOpen(false);
-                                    navigate('/inbox');
-                                }}
-                                className="w-full text-left flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-                            >
-                                <span>Inbox</span>
-                                {unreadCount > 0 && (
-                                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                                        {unreadCount} new
-                                    </span>
-                                )}
-                            </button>
-                            <button
-                                onClick={handleLogout}
-                                className="w-full text-left block px-4 py-3 rounded-xl text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
-                            >
-                                Logout
-                            </button>
-                        </>
-                    ) : (
-                        <Link
-                            to="/"
-                            onClick={() => setIsOpen(false)}
-                            className="block px-4 py-3 rounded-xl text-base font-medium text-olive-700 bg-olive-50 hover:bg-olive-100 transition-colors"
-                        >
-                            Login
-                        </Link>
-                    )}
-                </div>
-            </div>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="md:hidden bg-[#0b120f] border-b border-white/5 overflow-hidden"
+                    >
+                        <div className="px-4 pt-2 pb-6 space-y-1">
+                            {navLinks.map((link) => (
+                                <Link
+                                    key={link.name}
+                                    to={link.path}
+                                    onClick={() => setIsOpen(false)}
+                                    className={`block px-4 py-4 rounded-2xl text-base font-bold transition-all ${location.pathname === link.path
+                                        ? 'text-emerald-400 bg-emerald-500/10'
+                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                >
+                                    {link.name}
+                                </Link>
+                            ))}
+                            {user ? (
+                                <div className="space-y-2 pt-4 border-t border-white/5 mt-4">
+                                    <button
+                                        onClick={() => {
+                                            setIsOpen(false);
+                                            navigate('/inbox');
+                                        }}
+                                        className="w-full flex items-center justify-between px-4 py-4 rounded-2xl text-base font-bold text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Mail size={20} />
+                                            <span>Inbox</span>
+                                        </div>
+                                        {unreadCount > 0 && (
+                                            <span className="bg-red-500 text-white text-xs font-black px-2 py-1 rounded-full shadow-lg">
+                                                {unreadCount} NEW
+                                            </span>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full text-left flex items-center gap-3 px-4 py-4 rounded-2xl text-base font-bold text-red-400 hover:bg-red-500/10 transition-all font-black"
+                                    >
+                                        <LogOut size={20} />
+                                        Logout
+                                    </button>
+                                </div>
+                            ) : (
+                                <Link
+                                    to="/"
+                                    onClick={() => setIsOpen(false)}
+                                    className="block px-4 py-4 mt-4 rounded-2xl text-center text-base font-black text-white bg-gradient-to-r from-emerald-500 to-green-600 shadow-xl"
+                                >
+                                    Login to SkillLink
+                                </Link>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </nav>
     );
 };

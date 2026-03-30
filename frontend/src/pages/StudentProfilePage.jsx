@@ -34,14 +34,16 @@ const StudentProfilePage = () => {
 
     // Theme State
     const [darkMode, setDarkMode] = useState(() => {
-        const saved = localStorage.getItem("theme");
+        const themeKey = user ? `skilllink_theme_${user.id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
         return saved !== "light"; // Default to dark
     });
 
     const toggleTheme = () => {
         const newMode = !darkMode;
         setDarkMode(newMode);
-        localStorage.setItem("theme", newMode ? "dark" : "light");
+        const themeKey = user ? `skilllink_theme_${user.id}` : "skilllink_theme_global";
+        localStorage.setItem(themeKey, newMode ? "dark" : "light");
     };
 
     useEffect(() => {

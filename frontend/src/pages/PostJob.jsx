@@ -26,12 +26,17 @@ const PostJob = () => {
     const [loading, setLoading] = useState(false);
 
     // Theme State
-    const [darkMode, setDarkMode] = useState(true);
+    const [darkMode, setDarkMode] = useState(() => {
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        return saved !== "light"; // Default to dark if not set to light
+    });
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem("theme");
-        setDarkMode(savedTheme !== "light"); // Default to dark if not set to light
-    }, []);
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
+        setDarkMode(saved !== "light");
+    }, [user]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;

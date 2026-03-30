@@ -16,7 +16,7 @@ const Home = () => {
     const [totalMatched, setTotalMatched] = useState(0);
 
     // Filter States
-    const [maxDistance, setMaxDistance] = useState(20);
+    const [maxDistance, setMaxDistance] = useState(25);
     const [selectedShifts, setSelectedShifts] = useState([]);
     const [shopType, setShopType] = useState('All Types');
     const [minSalary, setMinSalary] = useState(0);
@@ -140,9 +140,10 @@ const Home = () => {
 
     // Sync with Login toggle
     useEffect(() => {
-        const savedTheme = localStorage.getItem("theme");
+        const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
+        const savedTheme = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");
         setDarkMode(savedTheme !== "light");
-    }, []);
+    }, [user]);
 
     return (
         <div
