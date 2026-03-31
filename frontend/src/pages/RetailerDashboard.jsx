@@ -15,6 +15,15 @@ const RetailerDashboard = () => {
         return saved !== "light"; // Default to dark
     });
 
+    const [jobs, setJobs] = useState([]);
+    const [applications, setApplications] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState("overview");
+    const [expandedJobId, setExpandedJobId] = useState(null);
+    const [selectedApp, setSelectedApp] = useState(null);
+    const [profile, setProfile] = useState({ description: "", website: "", instagram: "" });
+    const [saving, setSaving] = useState(false);
+
     useEffect(() => {
         const themeKey = user ? `skilllink_theme_${user.id || user.user_id}` : "skilllink_theme_global";
         const saved = localStorage.getItem(themeKey) || localStorage.getItem("skilllink_theme_global");

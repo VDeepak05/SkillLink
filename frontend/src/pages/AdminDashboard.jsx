@@ -65,7 +65,7 @@ const AdminDashboard = () => {
         if (!window.confirm(`CRITICAL: Are you sure you want to completely reject/delete ${shopName}? This cannot be undone.`)) return;
 
         try {
-            const res = await fetch(`http://localhost:8000/admin/retailers/${id}/reject`, {
+            const res = await fetch(`${API_BASE_URL}/admin/retailers/${id}/reject`, {
                 method: "DELETE"
             });
             if (res.ok) {
