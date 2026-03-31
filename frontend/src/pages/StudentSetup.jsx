@@ -65,7 +65,7 @@ const StudentSetup = () => {
             ${darkMode ? 'dark-animated-gradient' : 'bg-gradient-to-br from-emerald-50 via-white to-green-100'}`}>
             <div className="max-w-2xl w-full bg-white/80 dark:bg-white/5 backdrop-blur-2xl p-10 rounded-3xl shadow-2xl border border-white/20 dark:border-white/5">
                 <div className="text-center mb-10">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Welcome to SkillLink! 🎉</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Welcome to SkiLink!</h1>
                     <p className="text-gray-600 dark:text-emerald-100/70">Let's set up your profile. Select the skills you possess so retailers know what you bring to the table.</p>
                 </div>
 

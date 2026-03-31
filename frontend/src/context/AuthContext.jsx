@@ -11,8 +11,8 @@ export const AuthProvider = ({ children }) => {
     const login = (userData) => {
         let finalUser;
         if (typeof userData === 'string') {
-            finalUser = userData === 'student' 
-                ? { name: 'Alex Johnson', role: 'student' } 
+            finalUser = userData === 'student'
+                ? { name: 'Alex Johnson', role: 'student' }
                 : { name: 'Fresh Mart Manager', role: 'retailer' };
         } else {
             finalUser = userData;
@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         setUser(null);
         sessionStorage.removeItem('skilllink_authUser');
+        sessionStorage.removeItem('skilllink_activeRole'); // Back to Role Selection
     };
 
     return (
