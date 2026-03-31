@@ -92,6 +92,7 @@ def signin(credentials: UserSignIn):
 #                 ADMIN ROUTES
 # ---------------------------------------------------------
 @router.post("/admin/login")
+@router.post("/admin/signin")
 def admin_login(credentials: UserSignIn):
     # Hardcoded admin credentials for simplicity
     if credentials.email == "admin@skilllink.com" and credentials.password == "admin123":

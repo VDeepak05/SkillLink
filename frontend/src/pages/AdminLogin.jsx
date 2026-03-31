@@ -28,7 +28,7 @@ const AdminLogin = () => {
         setErrorMsg("");
 
         try {
-            const res = await fetch(`${API_BASE_URL}/admin/signin`, {
+            const res = await fetch(`${API_BASE_URL}/admin/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(credentials)
