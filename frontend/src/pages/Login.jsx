@@ -97,6 +97,8 @@ const Login = () => {
             ? `${API_BASE_URL}/auth/signin`
             : `${API_BASE_URL}/auth/signup/${activeRole}`;
 
+        console.log("Calling API endpoint:", endpoint);
+
         let payload = {};
 
         if (isLogin) {
